@@ -36,45 +36,42 @@
   opacity: 0.5;
 }
 
-.liveIndicator {
+.teammatesOnline {
+  display: flex;
+  margin-left: 16px;
+  gap: -8px;
+}
+
+.avatarMini {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--color-success);
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  border: 2px solid var(--color-surface-2);
+  margin-left: -6px;
+  color: #171717;
 }
 
-.dot {
-  width: 8px;
-  height: 8px;
-  background-color: var(--color-success);
-  border-radius: 50%;
-  animation: pulse-active 2s infinite;
-}
+.bgPony { background-color: var(--color-active); }
+.bgUnnath { background-color: var(--color-success); }
+.bgArjun { background-color: #a78bfa; }
 
-.controls {
-  display: flex;
-  background: var(--color-surface-1);
+.inviteBtn {
+  background: transparent;
+  border: 1px dashed var(--color-border);
+  color: var(--text-secondary);
   border-radius: 4px;
-  border: 1px solid var(--color-border);
-  overflow: hidden;
-}
-
-.controlBtn {
-  background: none;
-  border: none;
-  color: var(--text-primary);
-  padding: 4px 12px;
+  padding: 4px 8px;
   font-size: 12px;
   cursor: pointer;
-  border-right: 1px solid var(--color-border);
 }
-.controlBtn:last-child {
-  border-right: none;
-}
-.controlBtn:hover {
-  background: var(--color-surface-3);
+.inviteBtn:hover {
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
 }
 
 .stats {
@@ -93,19 +90,4 @@
   border: none;
   color: var(--text-secondary);
   cursor: pointer;
-}
-
-.stopBtn {
-  background-color: var(--color-critical);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 6px 16px;
-  font-weight: 700;
-  font-size: 12px;
-  cursor: pointer;
-  text-transform: uppercase;
-}
-.stopBtn:hover {
-  opacity: 0.9;
 }

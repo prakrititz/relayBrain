@@ -1,0 +1,188 @@
+.rail {
+  width: 72px;
+  height: 100vh;
+  background-color: var(--color-surface-3);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px 0;
+  flex-shrink: 0;
+  border-right: 1px solid var(--color-border);
+  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
+}
+
+.rail.expanded {
+  width: 240px;
+}
+
+.topSection, .bottomSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.sectionTitle {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  padding: 0 16px;
+  margin-top: 8px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  animation: fadeIn 0.2s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.itemWrapper {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 12px;
+  cursor: pointer;
+  border-radius: 8px;
+  margin: 0 4px;
+}
+
+.itemWrapper:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.activeWrapper {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.itemText {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  animation: fadeIn 0.2s ease forwards;
+}
+
+.workspaceIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  background-color: var(--color-surface-1);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  border: 1px solid var(--color-border);
+}
+
+.itemWrapper:hover .workspaceIcon {
+  border-radius: 16px;
+  background-color: var(--color-active);
+  color: #171717;
+  border-color: var(--color-active);
+}
+
+.workspaceIcon.active {
+  border-radius: 16px;
+  background-color: var(--color-active);
+  color: #171717;
+  border-color: var(--color-active);
+}
+
+.separator {
+  width: 32px;
+  height: 2px;
+  background-color: var(--color-border);
+  margin: 4px auto;
+  border-radius: 1px;
+}
+
+.addWorkspace {
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  background-color: transparent;
+  color: var(--color-success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+  border: 1px dashed var(--color-success);
+  transition: all 0.2s ease;
+}
+
+.itemWrapper:hover .addWorkspace {
+  border-radius: 16px;
+  background-color: rgba(34, 197, 94, 0.1);
+}
+
+.allMemoriesIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  background-color: rgba(99, 102, 241, 0.1);
+  color: #818cf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: bold;
+  flex-shrink: 0;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  transition: all 0.2s ease;
+}
+
+.itemWrapper:hover .allMemoriesIcon {
+  border-radius: 16px;
+  background-color: rgba(99, 102, 241, 0.2);
+}
+
+.actionIcon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.itemWrapper:hover .actionIcon {
+  color: var(--text-primary);
+}
+
+.profileAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  background-color: var(--color-active);
+  color: #171717;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 18px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.profileAvatar::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  background-color: var(--color-success);
+  border: 3px solid var(--color-surface-3);
+  border-radius: 50%;
+}

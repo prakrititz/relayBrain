@@ -7,29 +7,24 @@ export default function GlobalHeader() {
   return (
     <header className={styles.header}>
       <div className={styles.left}>
-        <div className={styles.logo}>ORBIT OS</div>
+        <div className={styles.logo}>MESH</div>
         <div className={styles.projectDropdown}>
-          Secure SaaS <span className={styles.arrow}>▼</span>
+          GoalGuard <span className={styles.arrow}>▼</span>
         </div>
-      </div>
-      
-      <div className={styles.center}>
-        <div className={styles.liveIndicator}>
-          <span className={styles.dot}></span> LIVE
+        <div className={styles.teammatesOnline}>
+          <span className={`${styles.avatarMini} ${styles.bgPony}`}>P</span>
+          <span className={`${styles.avatarMini} ${styles.bgUnnath}`}>U</span>
+          <span className={`${styles.avatarMini} ${styles.bgArjun}`}>A</span>
         </div>
-        <div className={styles.controls}>
-          <button className={styles.controlBtn}>Pause</button>
-          <button className={styles.controlBtn}>Step</button>
-        </div>
+        <button className={styles.inviteBtn}>+ Invite</button>
       </div>
 
       <div className={styles.right}>
         <div className={styles.stats}>
-          <span>Tokens: <strong className="mono">142k</strong></span>
-          <span>Cost: <strong className="mono">$0.34</strong></span>
+          <span>Memories: <strong className="mono">847</strong></span>
+          <span>Votes: <strong className="mono">3</strong> pending</span>
         </div>
         <button className={styles.settingsBtn}>Settings</button>
-        <button className={styles.stopBtn}>STOP</button>
       </div>
     </header>
   );

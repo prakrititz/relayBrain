@@ -1,173 +1,123 @@
 .sidebar {
   width: 260px;
-  height: 100vh;
-  background-color: #171717; /* .bg-card from temp.cs */
-  border-right: 1px solid var(--border-color);
+  height: 100%;
+  background-color: var(--color-surface-2);
+  border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   padding: 16px 0;
   flex-shrink: 0;
 }
 
-.logoSection {
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  margin-bottom: 24px;
-}
-
-.logoIcon {
-  font-size: 24px;
-  margin-right: 12px;
-}
-
-.logoText {
-  font-size: 1.2rem;
+.sectionTitle {
+  font-size: 10px;
   font-weight: 800;
-  color: var(--text-primary);
-}
-
-.section {
+  color: var(--text-secondary);
   padding: 0 16px;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
-.projectHeader {
-  background-color: #353535; /* .bg-sidebar-card-top */
-  border-radius: 12px;
-  padding: 12px;
-  display: flex;
-  align-items: center;
-}
-
-.projectIcon {
-  width: 36px;
-  height: 36px;
-  background-color: #2d2d2d; /* .icon-background */
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 12px;
-}
-
-.innerIcon {
-  color: var(--text-primary);
-  font-weight: bold;
-}
-
-.projectInfo {
+.teammatesList {
   display: flex;
   flex-direction: column;
+  padding: 0 16px;
+  gap: 12px;
 }
 
-.projectTitle {
-  font-weight: 700;
-  color: var(--text-primary);
-  font-size: 0.9rem;
+.teammateCard {
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 12px;
 }
 
-.projectSub {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-}
-
-.navSection {
-  margin-bottom: 24px;
-}
-
-.sectionTitle {
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: var(--text-secondary);
-  padding: 0 20px;
-  margin-bottom: 8px;
-  letter-spacing: 1px;
-}
-
-.navItem {
+.tmHeader {
   display: flex;
   align-items: center;
-  padding: 10px 20px;
-  cursor: pointer;
-  border-right: 2px solid transparent;
-  transition: all 0.2s ease;
-  color: var(--text-secondary);
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
-.navItem:hover {
-  background-color: rgba(255, 255, 255, 0.03);
-  color: #a1a0a0;
+.statusDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
 }
 
-.navItem.active {
-  color: var(--text-primary);
-  border-right-color: white;
-  background-color: rgba(255, 255, 255, 0.05);
-}
+.green { background-color: var(--color-success); }
+.yellow { background-color: var(--color-warning); }
+.grey { background-color: var(--text-muted); }
 
-.itemHash {
-  font-size: 1.1rem;
-  margin-right: 12px;
-  opacity: 0.5;
-}
-
-.itemIcon {
-  font-size: 1.1rem;
-  margin-right: 12px;
-}
-
-.itemTitle {
-  font-size: 0.95rem;
+.tmName {
   font-weight: 600;
-  flex-grow: 1;
+  color: var(--text-primary);
+  font-size: 13px;
 }
 
-.badge {
-  background-color: var(--accent-security);
-  color: white;
-  font-size: 0.7rem;
-  font-weight: bold;
-  padding: 2px 6px;
-  border-radius: 12px;
+.tmDetails {
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tmTool {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.tmFile {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.tmMsg {
+  font-size: 11px;
+  color: var(--text-primary);
+  font-style: italic;
+  margin-top: 4px;
 }
 
 .spacer {
   flex-grow: 1;
 }
 
-.userSection {
-  padding: 16px 20px;
-  border-top: 1px solid var(--border-color); /* .sidebar-separator-bottom */
-  display: flex;
-  align-items: center;
-}
-
-.userAvatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background-color: var(--accent-developer);
-  color: #171717;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  margin-right: 12px;
-}
-
-.userInfo {
+.proposalsList {
   display: flex;
   flex-direction: column;
+  padding: 0 16px;
+  gap: 12px;
 }
 
-.userName {
-  font-weight: 700;
-  color: var(--text-primary);
-  font-size: 0.9rem;
+.proposalItem {
+  display: flex;
+  gap: 8px;
 }
 
-.userRole {
-  font-size: 0.75rem;
+.proposalIcon {
+  font-size: 12px;
+  flex-shrink: 0;
+  margin-top: 2px;
   color: var(--text-secondary);
+}
+
+.proposalContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.proposalText {
+  font-size: 11px;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.proposalTime {
+  font-size: 10px;
+  color: var(--text-muted);
 }

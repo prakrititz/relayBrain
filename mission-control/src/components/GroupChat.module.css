@@ -1,55 +1,39 @@
 .chatContainer {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  background-color: var(--bg-main);
-  flex-grow: 1;
+  height: 100%;
+  background-color: var(--color-surface-1);
+  border-right: 1px solid var(--color-border);
 }
 
-.header {
-  height: 64px;
-  border-bottom: 1px solid var(--border-color);
+.tabsHeader {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
+  height: 48px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-2);
   flex-shrink: 0;
 }
 
-.channelInfo {
+.tab {
+  padding: 0 24px;
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.channelName {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.channelTopic {
-  font-size: 0.8rem;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text-secondary);
-  border-left: 1px solid var(--border-color);
-  padding-left: 12px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
 }
 
-.agentAvatars {
-  display: flex;
-  gap: -8px;
+.tab:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.02);
 }
 
-.avatarMini {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  border: 2px solid var(--bg-main);
-  margin-left: -8px;
+.activeTab {
+  color: var(--color-active);
+  border-bottom-color: var(--color-active);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .messagesArea {
@@ -64,35 +48,29 @@
 .messageWrapper {
   display: flex;
   gap: 16px;
-  max-width: 85%;
-}
-
-.isUser {
-  /* align-self: flex-end; can be used for imessage style, but we'll keep discord style */
+  max-width: 90%;
 }
 
 .avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: bold;
   flex-shrink: 0;
 }
 
-.operator { background-color: var(--border-color); color: var(--text-primary); }
-.architect { background-color: rgba(107, 141, 227, 0.2); }
-.developer { background-color: rgba(0, 255, 157, 0.2); }
-.security { background-color: rgba(255, 59, 59, 0.2); }
-.deployment { background-color: rgba(125, 28, 141, 0.2); }
+.operator { background-color: var(--color-surface-3); color: var(--text-primary); border: 1px solid var(--color-border); }
+.memoryAvatar { background-color: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); }
+.agentAvatar { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
 
 .messageContent {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .messageHeader {
@@ -104,23 +82,95 @@
 .senderName {
   font-weight: 700;
   color: var(--text-primary);
+  font-size: 13px;
 }
 
 .timestamp {
-  font-size: 0.7rem;
+  font-size: 11px;
   color: var(--text-secondary);
 }
 
 .messageText {
-  color: #d1d1d1;
+  color: var(--text-primary);
   line-height: 1.5;
-  font-size: 0.95rem;
+  font-size: 13px;
 }
 
-.reasoningWrapper {
-  margin-top: 12px;
-  max-width: 600px;
+.memoryEntryBox {
+  background: var(--color-surface-2);
+  border-left: 3px solid #818cf8;
+  padding: 12px;
+  border-radius: 0 6px 6px 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
 }
+
+.memRow {
+  display: flex;
+  gap: 12px;
+}
+.memLabel { color: var(--text-secondary); width: 40px; }
+.memValue { color: var(--text-primary); }
+
+.linkBtn {
+  background: none;
+  border: none;
+  color: var(--color-active);
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 4px;
+}
+
+.decisionCard {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 4px;
+}
+
+.decisionRow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+.decLabel { color: var(--text-secondary); width: 70px; display: inline-block; }
+
+.voteSection {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--color-border);
+}
+
+.votePrompt {
+  font-size: 12px;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.voteActions {
+  display: flex;
+  gap: 8px;
+}
+
+.voteBtnYes, .voteBtnNo, .voteBtnEdit {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  font-weight: 600;
+  border: none;
+}
+
+.voteBtnYes { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+.voteBtnNo { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+.voteBtnEdit { background: transparent; color: var(--text-primary); border: 1px solid var(--color-border); }
 
 .inputArea {
   padding: 0 24px 24px 24px;
@@ -130,7 +180,8 @@
 .inputForm {
   display: flex;
   align-items: center;
-  background-color: #252525;
+  background-color: var(--color-surface-2);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 8px 16px;
   gap: 12px;
@@ -145,26 +196,19 @@
   padding: 0 8px;
 }
 
-.attachBtn:hover {
-  color: var(--text-primary);
-}
-
 .textInput {
   flex-grow: 1;
   background: none;
   border: none;
   color: var(--text-primary);
-  font-size: 1rem;
+  font-size: 13px;
   font-family: inherit;
 }
-
-.textInput:focus {
-  outline: none;
-}
+.textInput:focus { outline: none; }
 
 .sendBtn {
-  background-color: var(--accent-architect);
-  color: white;
+  background-color: var(--color-active);
+  color: #171717;
   border: none;
   border-radius: 6px;
   padding: 8px 16px;
@@ -172,6 +216,9 @@
   cursor: pointer;
 }
 
-.sendBtn:hover {
-  opacity: 0.9;
+.placeholderTab {
+  padding: 48px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 14px;
 }

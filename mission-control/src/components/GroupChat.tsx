@@ -2,40 +2,50 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import styles from './GroupChat.module.css';
-import ReasoningSummary from './ReasoningSummary';
 
 const initialMessages = [
   {
     id: 1,
-    sender: 'User',
+    sender: 'Arjun',
     role: 'operator',
-    text: '@Architect we need to add a new Redis cache layer for the API to improve latency.',
+    text: 'Starting work on the auth system',
     time: '10:02 AM',
   },
   {
     id: 2,
-    sender: 'Architect Agent',
-    role: 'architect',
-    text: 'Analyzing the architecture for caching layer insertion...',
+    sender: 'Pony',
+    role: 'operator',
+    text: 'did anyone set up rate limiting for the API?',
     time: '10:03 AM',
-    reasoning: {
-      goal: 'Integrate Redis cache for API latency',
-      constraints: 'Existing data flow, minimal downtime',
-      decision: 'Deploy Redis as a sidecar to the API service',
-      tradeoff: 'Higher memory overhead per node, but faster local access',
-      nextAction: 'Hand off to Developer Agent to implement connection'
-    }
   },
   {
     id: 3,
-    sender: 'Developer Agent',
-    role: 'developer',
-    text: 'I have generated the Redis connection utilities and updated the API handlers. Preparing PR.',
-    time: '10:05 AM',
+    sender: 'Mesh Memory',
+    role: 'memory',
+    text: 'Yes — Unnath added this 2 days ago.',
+    time: '10:03 AM',
+    memoryData: {
+      key: 'api/rate_limiting',
+      value: 'express-rate-limit, 100 req/min per IP',
+      addedBy: 'Unnath via Copilot • Jun 10 14:22',
+      votes: 'Y: 3 N: 0'
+    }
+  },
+  {
+    id: 4,
+    sender: "Pony's Agent (Claude Code)",
+    role: 'agent',
+    time: '10:04 AM',
+    decisionData: {
+      decision: 'Use JWT over sessions',
+      reason: 'Stateless, better for mobile clients',
+      affects: '/src/auth/* (4 files)'
+    }
   }
 ];
 
 export default function GroupChat() {
+  const [activeTab, setActiveTab] = useState('chat');
   const [messages, setMessages] = useState(initialMessages);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -46,7 +56,7 @@ export default function GroupChat() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, activeTab]);
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +64,7 @@ export default function GroupChat() {
 
     const userMessage = {
       id: Date.now(),
-      sender: 'User',
+      sender: 'You',
       role: 'operator',
       text: input,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -62,78 +72,117 @@ export default function GroupChat() {
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
-
-    // Simulate agent response
-    setTimeout(() => {
-      const agentMessage = {
-        id: Date.now() + 1,
-        sender: 'Security Agent',
-        role: 'security',
-        text: 'Reviewing the requested changes for security implications...',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        reasoning: {
-          goal: 'Security scan on new Redis implementation',
-          constraints: 'Prevent unauthenticated access',
-          decision: 'Enforce requirepass configuration in Redis and block external ports',
-          tradeoff: 'Slight configuration complexity',
-          nextAction: 'Proceed with safe deployment'
-        }
-      };
-      setMessages(prev => [...prev, agentMessage]);
-    }, 2000);
   };
 
   return (
     <div className={styles.chatContainer}>
-      <div className={styles.header}>
-        <div className={styles.channelInfo}>
-          <h2 className={styles.channelName}># orbit-os-general</h2>
-          <span className={styles.channelTopic}>Main channel for coordinating the Orbit OS DevSecOps platform</span>
+      <div className={styles.tabsHeader}>
+        <div 
+          className={`${styles.tab} ${activeTab === 'chat' ? styles.activeTab : ''}`}
+          onClick={() => setActiveTab('chat')}
+        >
+          Chat
         </div>
-        <div className={styles.agentAvatars}>
-          <div className={`${styles.avatarMini} ${styles.architect}`}>A</div>
-          <div className={`${styles.avatarMini} ${styles.developer}`}>B</div>
-          <div className={`${styles.avatarMini} ${styles.security}`}>S</div>
-          <div className={`${styles.avatarMini} ${styles.deployment}`}>D</div>
+        <div 
+          className={`${styles.tab} ${activeTab === 'activity' ? styles.activeTab : ''}`}
+          onClick={() => setActiveTab('activity')}
+        >
+          Activity
+        </div>
+        <div 
+          className={`${styles.tab} ${activeTab === 'memory' ? styles.activeTab : ''}`}
+          onClick={() => setActiveTab('memory')}
+        >
+          Memory Search
         </div>
       </div>
 
-      <div className={styles.messagesArea}>
-        {messages.map((msg) => (
-          <div key={msg.id} className={`${styles.messageWrapper} ${msg.sender === 'User' ? styles.isUser : ''}`}>
-            <div className={`${styles.avatar} ${styles[msg.role]}`}>
-              {msg.role === 'operator' ? 'JD' : msg.role === 'architect' ? 'A' : msg.role === 'developer' ? 'B' : msg.role === 'security' ? 'S' : 'D'}
-            </div>
-            <div className={styles.messageContent}>
-              <div className={styles.messageHeader}>
-                <span className={styles.senderName}>{msg.sender}</span>
-                <span className={styles.timestamp}>{msg.time}</span>
-              </div>
-              <div className={styles.messageText}>{msg.text}</div>
-              {msg.reasoning && (
-                <div className={styles.reasoningWrapper}>
-                  <ReasoningSummary activeAgentName={msg.sender} data={msg.reasoning} />
+      {activeTab === 'chat' && (
+        <>
+          <div className={`${styles.messagesArea} custom-scrollbar`}>
+            {messages.map((msg) => (
+              <div key={msg.id} className={styles.messageWrapper}>
+                
+                {msg.role === 'operator' && (
+                  <div className={`${styles.avatar} ${styles.operator}`}>
+                    {msg.sender.charAt(0)}
+                  </div>
+                )}
+                {msg.role === 'memory' && (
+                  <div className={`${styles.avatar} ${styles.memoryAvatar}`}>M</div>
+                )}
+                {msg.role === 'agent' && (
+                  <div className={`${styles.avatar} ${styles.agentAvatar}`}>A</div>
+                )}
+
+                <div className={styles.messageContent}>
+                  <div className={styles.messageHeader}>
+                    <span className={styles.senderName}>{msg.sender}</span>
+                    <span className={styles.timestamp}>{msg.time}</span>
+                  </div>
+                  
+                  {msg.text && <div className={styles.messageText}>{msg.text}</div>}
+                  
+                  {msg.memoryData && (
+                    <div className={styles.memoryEntryBox}>
+                      <div className={styles.memRow}><span className={styles.memLabel}>KEY:</span> <span className={styles.memValue}>{msg.memoryData.key}</span></div>
+                      <div className={styles.memRow}><span className={styles.memLabel}>VALUE:</span> <span className={styles.memValue}>{msg.memoryData.value}</span></div>
+                      <div className={styles.memRow}><span className={styles.memLabel}>ADDED:</span> <span className={styles.memValue}>{msg.memoryData.addedBy}</span></div>
+                      <div className={styles.memRow}><span className={styles.memLabel}>VOTES:</span> <span className={styles.memValue}>{msg.memoryData.votes}</span></div>
+                      <button className={styles.linkBtn}>[View full entry]</button>
+                    </div>
+                  )}
+
+                  {msg.decisionData && (
+                    <div className={styles.decisionCard}>
+                      <div className={styles.decisionRow}><span className={styles.decLabel}>DECISION:</span> {msg.decisionData.decision}</div>
+                      <div className={styles.decisionRow}><span className={styles.decLabel}>REASON:</span> {msg.decisionData.reason}</div>
+                      <div className={styles.decisionRow}><span className={styles.decLabel}>AFFECTS:</span> {msg.decisionData.affects}</div>
+                      
+                      <div className={styles.voteSection}>
+                        <div className={styles.votePrompt}>Save to shared memory?</div>
+                        <div className={styles.voteActions}>
+                          <button className={styles.voteBtnYes}>Save</button>
+                          <button className={styles.voteBtnNo}>Skip</button>
+                          <button className={styles.voteBtnEdit}>Edit</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                 </div>
-              )}
-            </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
           </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
 
-      <div className={styles.inputArea}>
-        <form onSubmit={handleSend} className={styles.inputForm}>
-          <button type="button" className={styles.attachBtn}>+</button>
-          <input 
-            type="text" 
-            className={styles.textInput} 
-            placeholder="Message #orbit-os-general and @agents..." 
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-          />
-          <button type="submit" className={styles.sendBtn}>Send</button>
-        </form>
-      </div>
+          <div className={styles.inputArea}>
+            <form onSubmit={handleSend} className={styles.inputForm}>
+              <button type="button" className={styles.attachBtn}>+</button>
+              <input 
+                type="text" 
+                className={styles.textInput} 
+                placeholder="Message team and ask memory..." 
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+              />
+              <button type="submit" className={styles.sendBtn}>Send</button>
+            </form>
+          </div>
+        </>
+      )}
+
+      {activeTab === 'activity' && (
+        <div className={styles.placeholderTab}>
+          Activity Stream View (See LogStream)
+        </div>
+      )}
+
+      {activeTab === 'memory' && (
+        <div className={styles.placeholderTab}>
+          Memory Search View
+        </div>
+      )}
     </div>
   );
 }

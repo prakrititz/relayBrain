@@ -7,7 +7,7 @@
   justify-content: space-between;
   padding: 0 16px;
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .left {
@@ -17,7 +17,7 @@
 }
 
 .label {
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-muted);
   letter-spacing: 0.05em;
 }
@@ -30,47 +30,44 @@
 .containerPill {
   background: var(--color-surface-1);
   border: 1px solid var(--color-border);
-  padding: 2px 8px;
-  border-radius: 12px;
-  color: var(--text-secondary);
+  padding: 4px 10px;
+  border-radius: 4px;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 6px;
+  font-weight: 600;
 }
 
-.ok {
-  color: var(--color-success);
+.toolUser {
+  color: var(--text-secondary);
+  font-weight: normal;
+  margin-left: 4px;
+}
+
+.ok { color: var(--color-success); }
+.idle { color: var(--text-muted); }
+
+.connectBtn {
+  background: transparent;
+  border: 1px dashed var(--color-border);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.connectBtn:hover {
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
 }
 
 .metrics {
   display: flex;
   align-items: center;
-  gap: 16px;
-  color: var(--text-secondary);
-}
-
-.metrics span {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.barVisual {
-  width: 40px;
-  height: 4px;
-  background: var(--color-surface-1);
-  border-radius: 2px;
-  overflow: hidden;
-  display: inline-block;
-}
-
-.barVisual span {
-  display: block;
-  height: 100%;
-  background: var(--color-active);
 }
 
 .sysOk {
   color: var(--color-success);
-  margin-left: 8px;
+  font-weight: 600;
 }

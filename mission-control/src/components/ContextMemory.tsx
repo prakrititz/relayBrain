@@ -43,10 +43,10 @@ export default function ContextMemory() {
 
   return (
     <div className={`glass-panel ${styles.panel}`}>
-      <div className="section-title">CONTEXT / MEMORY BANK</div>
+      <div className="section-title">SHARED MEMORY BANK <span className={styles.count}>[847 entries]</span></div>
       
       <div className={`${styles.treeContainer} mono custom-scrollbar`}>
-        <div className={styles.treeRoot}>/memory</div>
+        <div className={styles.treeRoot}>/</div>
         {tree.map((node, i) => (
           <div key={node.name} className={styles.treeNode}>
             <div className={styles.nodeHeader} onClick={() => toggleNode(i)}>
@@ -66,20 +66,16 @@ export default function ContextMemory() {
           </div>
         ))}
         
-        <div className={styles.treeRoot} style={{ marginTop: '16px' }}>/agent_memory</div>
+        <div className={styles.treeRoot} style={{ marginTop: '16px' }}>/open_questions</div>
         <div className={styles.treeNode}>
           <div className={styles.nodeHeader}>
             <span className={styles.icon}>-</span>
-            <span className={styles.nodeName}>security_agent</span>
+            <span className={styles.nodeName}>should we use tRPC or REST?</span>
           </div>
           <div className={styles.nodeChildren}>
             <div className={styles.childNode}>
-              <span className={styles.childKey}>past_vulns:</span>
-              <span className={styles.childValue}>[CVE-2024-0553]</span>
-            </div>
-            <div className={styles.childNode}>
-              <span className={styles.childKey}>trust_score:</span>
-              <span className={styles.childValue}>98%</span>
+              <span className={styles.childKey}>status:</span>
+              <span className={styles.childValue}>UNRESOLVED ⚠️</span>
             </div>
           </div>
         </div>

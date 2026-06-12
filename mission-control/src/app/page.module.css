@@ -1,9 +1,16 @@
+.appWrapper {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: var(--color-surface-1);
+}
+
 .layout {
   display: flex;
   flex-direction: column;
+  flex-grow: 1;
   height: 100vh;
-  width: 100vw;
-  background-color: var(--color-surface-1);
 }
 
 .mainArea {

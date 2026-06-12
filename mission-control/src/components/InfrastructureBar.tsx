@@ -3,35 +3,30 @@
 import React from 'react';
 import styles from './InfrastructureBar.module.css';
 
-const containers = [
-  { name: 'app-container-1', status: 'ok' },
-  { name: 'app-container-2', status: 'ok' },
-  { name: 'postgres', status: 'ok' },
-  { name: 'redis', status: 'ok' },
-  { name: 'cdn', status: 'ok' },
-  { name: 'gateway', status: 'ok' },
+const tools = [
+  { name: 'Claude Code', user: 'Pony', status: 'ok' },
+  { name: 'Copilot', user: 'Unnath', status: 'ok' },
+  { name: 'Codex', user: 'Arjun', status: 'ok' },
+  { name: 'Cursor', user: '—', status: 'idle' },
 ];
 
 export default function InfrastructureBar() {
   return (
     <div className={styles.bar}>
       <div className={styles.left}>
-        <span className={styles.label}>PRODUCTION ENVIRONMENT</span>
+        <span className={styles.label}>CONNECTED TOOLS</span>
         <div className={styles.containerList}>
-          {containers.map(c => (
-            <div key={c.name} className={styles.containerPill}>
-              {c.name} <span className={styles[c.status]}>●</span>
+          {tools.map(t => (
+            <div key={t.name} className={styles.containerPill}>
+              <span className={styles[t.status]}>●</span> {t.name} <span className={styles.toolUser}>{t.user}</span>
             </div>
           ))}
+          <button className={styles.connectBtn}>+ Connect Your Tool</button>
         </div>
       </div>
       
-      <div className={`${styles.metrics} mono`}>
-        <span>CPU 34% <span className={styles.barVisual}><span style={{ width: '34%' }}></span></span></span>
-        <span>MEM 61% <span className={styles.barVisual}><span style={{ width: '61%' }}></span></span></span>
-        <span>LATENCY p99: 142ms</span>
-        <span>UPTIME 99.97%</span>
-        <span className={styles.sysOk}>↑ All Systems Nominal</span>
+      <div className={styles.metrics}>
+        <span className={styles.sysOk}>Mesh Node Online</span>
       </div>
     </div>
   );
