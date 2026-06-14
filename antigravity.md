@@ -1,50 +1,45 @@
-# Antigravity Transcript Extraction Analysis
+# Antigravity Persistent State & Memory Extraction
 
-Based on an exploration of the local environment following the methodologies in `the_actual_plan.md`, here are my findings on how to extract chat transcripts and memory directly from the Antigravity system.
+Based on a deep forensic analysis of the Antigravity local environment (as per the objectives in `nextSteps.md`), the state is much more complex than just transcripts. 
 
-## 1. Storage Location
-Antigravity stores all conversation transcripts entirely locally on the user's filesystem. 
+Here are the complete findings on how to fully recreate the agent's understanding of a project.
 
-The path pattern is:
-`[App Data Directory]\brain\[Conversation ID]\.system_generated\logs\transcript.jsonl`
+## 1. Storage Location & Session Management
+All persistent state resides inside the Antigravity App Data directory:
+`C:\Users\Prakrititz Borah\.gemini\antigravity-ide`
 
-For this specific environment, the exact path to our current conversation is:
-`C:\Users\Prakrititz Borah\.gemini\antigravity-ide\brain\56f9135c-2f00-46c5-8899-ac16f108ac58\.system_generated\logs\transcript.jsonl`
+Conversations (Sessions) are assigned a unique "brain UUID". For example:
+`.../brain/56f9135c-2f00-46c5-8899-ac16f108ac58/`
 
-## 2. File Format
-The transcripts are stored in **JSON Lines (JSONL)** format. 
-Each line is a self-contained JSON object representing a single step in the conversation. This includes user inputs, model responses, system messages, and full tool execution traces.
+## 2. Transcripts (The Execution Log)
+- **Location:** `brain/[ID]/.system_generated/logs/transcript.jsonl`
+- **Format:** JSONL
+- **Purpose:** Records the raw chronological sequence of User Inputs, Agent Responses, Tool Calls, and System events.
 
-Example structure:
-```json
-{
-  "step_index": 0,
-  "source": "USER_EXPLICIT",
-  "type": "USER_INPUT",
-  "status": "DONE",
-  "created_at": "2026-06-12T04:13:41Z",
-  "content": "<USER_REQUEST>...</USER_REQUEST>"
-}
-```
+## 3. Planning & Task State
+Antigravity explicitly decouples long-term planning from the transcript by writing stateful, versioned Markdown artifacts.
+- **Implementation Plans:** `brain/[ID]/artifacts/implementation_plan.md`
+- **Task Tracking (TODOs):** `brain/[ID]/artifacts/task.md`
+- **Execution Summaries:** `brain/[ID]/artifacts/walkthrough.md`
+*Each of these has a corresponding `.metadata.json` tracking internal system status.*
 
-## 3. Extraction Method
-Because this is a standard JSONL file stored locally, extraction is trivial. Unlike browser-based agents where you must intercept WebSockets or dig through `indexedDB` (as Step 7 in the plan outlines), Antigravity makes its state highly accessible.
+## 4. Background Tasks & Tool Execution
+When Antigravity runs long-running shell commands, it streams the output into dedicated task logs rather than flooding the transcript.
+- **Task Logs:** `brain/[ID]/.system_generated/tasks/*.log` (e.g., `task-1082.log`)
+- **System Messages:** `brain/[ID]/.system_generated/messages/*.json` (Tracks background task completions, subagent messages, and timer expirations).
 
-**To extract a specific conversation in PowerShell:**
-```powershell
-Get-Content "C:\Users\Prakrititz Borah\.gemini\antigravity-ide\brain\56f9135c-2f00-46c5-8899-ac16f108ac58\.system_generated\logs\transcript.jsonl"
-```
+## 5. Artifacts, Media & Scratch
+- **Generated Media:** `brain/[ID]/media_*.png` (Images the agent generated or received).
+- **Temporary Code/Data:** `brain/[ID]/scratch/` (Scripts the agent wrote temporarily to test logic).
 
-**To search all past conversations for a keyword (Step 4 from the plan):**
-```powershell
-Select-String -Path "C:\Users\Prakrititz Borah\.gemini\antigravity-ide\brain\*\.system_generated\logs\transcript.jsonl" -Pattern "BananaPurpleDragon2026"
-```
-
-## 4. Other Discoverable Artifacts
-In addition to the raw transcript, monitoring the filesystem during execution reveals other rich data sources:
-- **Background Task Logs:** Terminal commands sent to the background are logged sequentially in `.system_generated\tasks\`
-- **Knowledge Items (KIs):** Curated summaries of past work and code patterns are stored globally in `C:\Users\Prakrititz Borah\.gemini\antigravity-ide\knowledge\`
-- **Persistent Artifacts:** Generated plans, code, or markdown documents are saved locally in the `artifacts\` folder of the current brain.
+## 6. Global Knowledge Items (Memory)
+Antigravity maintains a persistent memory system across all workspaces, extracting patterns and rules to avoid repeating mistakes.
+- **Location:** `~/.gemini/antigravity-ide/knowledge/`
+- **Format:** Contains subfolders for each Knowledge Item (KI), housing `metadata.json` and associated `artifacts/`.
 
 ## Conclusion
-Evaluating Antigravity using the matrix in `the_actual_plan.md` (Step 1: Classify Targets), this system falls into the **"Very High"** ease-of-extraction category. It operates entirely locally and writes unencrypted, standard JSON objects directly to the filesystem in real-time, making it an ideal candidate for building a cross-agent memory foundation.
+To fully reconstruct Antigravity's state, one must extract:
+1. **The Transcript** for chronological context.
+2. **The Artifacts (`task.md`, `implementation_plan.md`)** for the agent's current mental model of progress.
+3. **The Tasks folder** for exact shell execution history and outputs.
+4. **The Knowledge folder** for cross-session global learnings.

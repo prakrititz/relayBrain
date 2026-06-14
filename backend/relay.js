@@ -375,11 +375,17 @@ function syncWorkspace(workspacePath) {
     }
 
     try {
-      let events = [];
-      if (agent === 'Antigravity') events = parseAntigravity(transcriptPath);
-      else if (agent === 'Codex') events = parseCodex(transcriptPath);
-      else if (agent === 'Claude Code') events = parseClaude(transcriptPath);
-      else if (agent === 'GitHub Copilot') events = parseCopilot(transcriptPath);
+      let parsedData = [];
+      if (agent === 'Antigravity') parsedData = parseAntigravity(transcriptPath);
+      else if (agent === 'Codex') parsedData = parseCodex(transcriptPath);
+      else if (agent === 'Claude Code') parsedData = parseClaude(transcriptPath);
+      else if (agent === 'GitHub Copilot') parsedData = parseCopilot(transcriptPath);
+
+      // Handle legacy Array return (just events) vs new Object return (events, artifacts, tasks, messages)
+      const events = Array.isArray(parsedData) ? parsedData : (parsedData.events || []);
+      const artifacts = Array.isArray(parsedData) ? [] : (parsedData.artifacts || []);
+      const tasks = Array.isArray(parsedData) ? [] : (parsedData.tasks || []);
+      const messages = Array.isArray(parsedData) ? [] : (parsedData.messages || []);
 
       if (!memory.agents) memory.agents = {};
       memory.agents[agent] = {
@@ -387,9 +393,12 @@ function syncWorkspace(workspacePath) {
         transcriptPath,
         eventCount: events.length,
         events: events.slice(-100), // keep last 100 events
+        artifacts: artifacts,
+        tasks: tasks.slice(-50), // keep last 50 background tasks
+        messages: messages.slice(-50), // keep last 50 internal messages
       };
       totalEvents += events.length;
-      console.log(`[Sync] ${agent}: ${events.length} events`);
+      console.log(`[Sync] ${agent}: ${events.length} events, ${artifacts.length} artifacts, ${tasks.length} tasks, ${messages.length} msgs`);
     } catch (err) {
       console.error(`[Sync] ${agent} parse error: ${err.message}`);
     }

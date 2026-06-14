@@ -1,0 +1,57 @@
+{
+  "platform": "Codex",
+  "workspace_mapping": {
+    "location": "~/.codex/sessions/[YYYY]/[MM]/[DD]/*.jsonl",
+    "format": "The first line of the JSONL file contains 'session_meta' with a 'cwd' field mapping the session to the workspace.",
+    "session_link": "session_index.jsonl maintains a global index of all rollouts."
+  },
+  "transcripts": [
+    "~/.codex/sessions/[YYYY]/[MM]/[DD]/rollout-*.jsonl"
+  ],
+  "plans": [
+    "~/.codex/goals_1.sqlite (Tracks internal goals and tasks)",
+    "~/.codex/rules/default.rules (Behavioral constraints)"
+  ],
+  "artifacts": [
+    "~/.codex/generated_images/",
+    "~/.codex/skills/ (Generated reusable skills/macros)"
+  ],
+  "tasks": [
+    "~/.codex/goals_1.sqlite"
+  ],
+  "memory": [
+    "~/.codex/memories_1.sqlite",
+    "~/.codex/memories/MEMORY.md",
+    "~/.codex/memories/memory_summary.md",
+    "~/.codex/memories/raw_memories.md",
+    "~/.codex/memories/rollout_summaries/"
+  ],
+  "tool_calls": [
+    "~/.codex/logs_2.sqlite"
+  ],
+  "code_changes": [
+    "~/.codex/state_5.sqlite"
+  ],
+  "git_state": [
+    "~/.codex/memories/.git (The markdown memory system is strictly version-controlled natively)"
+  ],
+  "checkpoints": [
+    "~/.codex/state_5.sqlite (Maintains execution state snapshots)"
+  ],
+  "sessions": [
+    "~/.codex/sessions/"
+  ],
+  "version_control": [
+    "~/.codex/memories/.git"
+  ],
+  "high_value_targets": [
+    "~/.codex/memories/ (Markdown memory structure)",
+    "~/.codex/goals_1.sqlite (Current objectives)",
+    "~/.codex/sessions/ (Transcripts)"
+  ],
+  "recommended_extractors": [
+    "Parse the markdown files in ~/.codex/memories/ as they provide a pre-consolidated, highly structured view of the project state.",
+    "Read goals_1.sqlite to extract active tasks and their completion status.",
+    "Parse the session_meta events in transcripts to map rollouts to workspaces."
+  ]
+}

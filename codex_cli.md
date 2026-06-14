@@ -1,74 +1,40 @@
-# Codex CLI Transcript Extraction Analysis
+# Codex Persistent State & Memory Extraction
 
-Following the same systematic discovery process, I've located and extracted the conversation memory for the Codex CLI.
+Based on a forensic analysis of the local environment for Codex (`~/.codex`), the state is distributed across a hybrid of SQLite databases and version-controlled Markdown files.
 
-## 1. Storage Location
-Codex CLI stores its data globally, but organizes it by a chronological folder structure rather than by workspace hash.
-
-The base path on Windows is:
+## 1. Storage Location & Session Management
+All persistent state resides inside the user's home directory:
 `C:\Users\[Username]\.codex\`
 
-Conversations are stored inside the `sessions\` subdirectory, grouped hierarchically by Year -> Month -> Day:
-`C:\Users\Prakrititz Borah\.codex\sessions\2026\06\14\`
+Sessions (called "rollouts") are stored in a nested date structure:
+`~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`
 
-## 2. File Format
-Like Antigravity and Claude Code, Codex relies on the **JSON Lines (JSONL)** format. 
+To map a rollout to a workspace, the `session_meta` event on the first line of the transcript contains the `cwd` (Current Working Directory). A global `session_index.jsonl` also keeps track of all past rollouts.
 
-Files are named with a `rollout-` prefix, followed by an ISO timestamp and a session UUID:
-e.g., `rollout-2026-06-14T06-05-17-019ec38d-d1ab-7c32-9e84-cd19e2387e7c.jsonl`
+## 2. Transcripts (The Execution Log)
+- **Location:** `~/.codex/sessions/**/*.jsonl`
+- **Format:** JSONL
+- **Contents:** The transcripts log every `user_message`, `agent_message`, and raw UI execution events natively.
 
-The structure is highly detailed and includes the full environment context and system prompts. Example:
-```json
-{
-  "timestamp": "2026-06-14T00:35:22.612Z",
-  "type": "session_meta",
-  "payload": {
-    "id": "019ec38d-d1ab-7c32-9e84-cd19e2387e7c",
-    "cwd": "c:\\Users\\Prakrititz Borah\\Downloads\\OrbitOS",
-    "model_provider": "openai",
-    "base_instructions": { ... }
-  }
-}
-```
+## 3. The Markdown Memory System (Highly Valuable)
+Unlike Cursor which embeds memory exclusively in SQLite, Codex builds a highly structured, human-readable markdown memory tree.
+- **Location:** `~/.codex/memories/`
+- **Contents:** `MEMORY.md`, `memory_summary.md`, `raw_memories.md`, and a `rollout_summaries/` directory.
+- **Crucial Detail:** This entire `memories` directory contains a hidden `.git` folder. Codex natively version-controls its own memory so it can rollback hallucinations or corrupted memories! This is a perfect target for the Universal IR.
 
-## 3. Extraction Method
-Because the `.jsonl` files are nested in a date-based directory structure, extraction requires recursively scanning the `sessions/` folder to find all logs. 
+## 4. SQLite Databases (System State)
+Codex uses several SQLite databases for tracking internal runtime state:
+- **`goals_1.sqlite`**: Tracks the internal "TODO" list and task breakdown for the agent.
+- **`logs_2.sqlite`**: Stores detailed background logs and tool executions.
+- **`memories_1.sqlite`**: Likely a vector/indexing database that backs up the Markdown memory system.
+- **`state_5.sqlite`**: Maintains the overall GUI state and checkpoints.
 
-**Node.js Extraction Script:**
-```javascript
-const fs = require('fs');
-const path = require('path');
-const rootDir = 'C:/Users/Prakrititz Borah/.codex/sessions/';
-
-function findJsonlFiles(dir, fileList = []) {
-  const files = fs.readdirSync(dir);
-  for (const file of files) {
-    const stat = fs.statSync(path.join(dir, file));
-    if (stat.isDirectory()) {
-      findJsonlFiles(path.join(dir, file), fileList);
-    } else if (file.endsWith('.jsonl')) {
-      fileList.push(path.join(dir, file));
-    }
-  }
-  return fileList;
-}
-
-const files = findJsonlFiles(rootDir);
-let allLogs = [];
-for (const file of files) {
-  const content = fs.readFileSync(file, 'utf-8');
-  const lines = content.trim().split('\n').filter(Boolean);
-  allLogs.push(...lines.map(l => JSON.parse(l)));
-}
-
-fs.writeFileSync('example_codex.json', JSON.stringify(allLogs, null, 2));
-```
-
-## 4. Other Discoverable Artifacts
-The `.codex` folder is rich with other artifacts:
-- **SQLite Databases:** Files like `logs_2.sqlite`, `state_5.sqlite`, and `memories_1.sqlite` contain telemetry, internal job queues, and potentially long-term semantic memory storage, respectively.
-- **Skills Directory:** Custom agent instructions and tools are stored in `~/.codex/skills/`.
-- **Session Index:** `~/.codex/session_index.jsonl` acts as a quick-lookup directory for all sessions.
+## 5. Rules & Skills
+- **Rules:** `~/.codex/rules/default.rules` stores behavioral constraints.
+- **Skills:** `~/.codex/skills/` stores generated "macros" or reusable commands the agent has learned.
 
 ## Conclusion
-Codex CLI also falls into the **"Very High"** ease-of-extraction category. By storing raw, unencrypted `JSONL` files chronologically, anyone can easily ingest these logs into a unified memory context database.
+To fully reconstruct Codex's state for Relay:
+1. **Transcripts:** Parse the JSONL rollouts to reconstruct the timeline (Already implemented).
+2. **Memory IR:** Sync directly with `~/.codex/memories/MEMORY.md` and `memory_summary.md`. These files are already in a structured Markdown format and map 1:1 with Relay's vision for project intelligence.
+3. **Tasks:** Query `goals_1.sqlite` to sync the active TODO list.

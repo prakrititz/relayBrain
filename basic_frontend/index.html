@@ -627,10 +627,15 @@
 </head>
 
 <body>
-  <!-- HEADER -->
   <header>
     <span class="logo">⬡ Relay</span>
     <span class="logo-sub">Agent Memory Hub</span>
+
+    <div style="margin-left: 30px; display: flex; gap: 10px;">
+      <button class="filter-chip active" id="navTimelineBtn" onclick="switchView('timeline')" style="font-size: 13px; padding: 6px 16px;">Timeline</button>
+      <button class="filter-chip" id="navMemoryBtn" onclick="switchView('memory')" style="font-size: 13px; padding: 6px 16px;">Memory Dashboard</button>
+    </div>
+
     <div class="header-status">
       <div class="dot" id="serverDot"></div>
       <span id="serverStatus">Connecting to backend...</span>
@@ -671,27 +676,61 @@
   <div class="right-panel">
     <div class="memory-header">
       <div>
-        <h2>Memory Timeline</h2>
-        <p id="memoryMeta">No workspace registered</p>
+        <h2 id="viewTitle">Unified Event Timeline</h2>
+        <p id="memoryMeta">0 events · last sync: never</p>
       </div>
-      <button class="btn btn-outline" id="syncBtn" onclick="syncMemory(true)" style="display:none">
-        ↻ Sync Memory
-      </button>
+      <button class="btn btn-outline" id="syncBtn" onclick="syncMemory(true)" style="display:none">↻ Sync Memory</button>
     </div>
-    <div class="memory-filters" id="filterBar" style="display:none">
-      <button class="filter-chip active" onclick="setFilter('all', this)">All Agents</button>
-      <button class="filter-chip" onclick="setFilter('Antigravity', this)">Antigravity</button>
-      <button class="filter-chip" onclick="setFilter('Codex', this)">Codex</button>
-      <button class="filter-chip" onclick="setFilter('Claude Code', this)">Claude Code</button>
-      <button class="filter-chip" onclick="setFilter('GitHub Copilot', this)">GitHub Copilot</button>
-      <button class="filter-chip" onclick="setFilter('user', this)">User Only</button>
-      <button class="filter-chip" onclick="setFilter('assistant', this)">Assistant Only</button>
+
+    <!-- TIMELINE VIEW -->
+    <div id="viewTimeline" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+      <div class="memory-filters" id="filterBar" style="display:none">
+        <button class="filter-chip active" onclick="setFilter('all', this)">All Events</button>
+        <button class="filter-chip" onclick="setFilter('user', this)">User Only</button>
+        <button class="filter-chip" onclick="setFilter('assistant', this)">Agent Only</button>
+        <button class="filter-chip" onclick="setFilter('Antigravity', this)">Antigravity</button>
+        <button class="filter-chip" onclick="setFilter('Codex', this)">Codex</button>
+        <button class="filter-chip" onclick="setFilter('Claude Code', this)">Claude</button>
+        <button class="filter-chip" onclick="setFilter('GitHub Copilot', this)">Copilot</button>
+      </div>
+      <div class="timeline" id="timeline">
+        <div class="empty-state">
+          <div class="icon">🔗</div>
+          <h3>No Memory Loaded</h3>
+          <p>Register a workspace and connect an agent to see events.</p>
+        </div>
+      </div>
     </div>
-    <div class="timeline" id="timeline">
-      <div class="empty-state">
-        <div class="icon">🔗</div>
-        <h3>No Memory Loaded</h3>
-        <p>Register a workspace and connect your agents to see their unified memory timeline here.</p>
+
+    <!-- MEMORY DASHBOARD VIEW -->
+    <div id="viewMemory" style="display:none; flex-direction:column; flex:1; overflow-y:auto; padding: 24px; gap: 24px;">
+      <div style="display:flex; gap: 32px; align-items: flex-start;">
+        
+        <!-- Artifacts Grid -->
+        <div style="flex: 2;">
+          <h3 style="margin-bottom: 16px; color: var(--text-2); font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Artifacts & Plans</h3>
+          <div id="artifactsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px;">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+
+        <!-- Tasks and Messages Column -->
+        <div style="flex: 1; display:flex; flex-direction:column; gap: 32px;">
+          <div>
+            <h3 style="margin-bottom: 16px; color: var(--text-2); font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Background Tasks</h3>
+            <div id="tasksList" style="display:flex; flex-direction:column; gap: 10px;">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+
+          <div>
+            <h3 style="margin-bottom: 16px; color: var(--text-2); font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">System Messages</h3>
+            <div id="messagesList" style="display:flex; flex-direction:column; gap: 10px;">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -700,7 +739,11 @@
     const API = 'http://localhost:3001';
     let workspacePath = localStorage.getItem('relay_workspace') || '';
     let allEvents = [];
+    let allArtifacts = [];
+    let allTasks = [];
+    let allMessages = [];
     let activeFilter = 'all';
+    let currentView = 'timeline';
 
     const AGENTS = [
       { id: 'Antigravity', icon: '⬡', cls: 'antigravity', desc: 'Antigravity IDE agent' },
@@ -874,6 +917,9 @@
 
         const memory = data.memory;
         allEvents = [];
+        allArtifacts = [];
+        allTasks = [];
+        allMessages = [];
 
         for (const [agentId, agentData] of Object.entries(memory.agents || {})) {
           if (agentData.status === 'connected') {
@@ -885,12 +931,16 @@
               token: null,
             };
             allEvents.push(...(agentData.events || []));
+            if (agentData.artifacts) allArtifacts.push(...agentData.artifacts.map(a => ({...a, source: agentId})));
+            if (agentData.tasks) allTasks.push(...agentData.tasks.map(t => ({...t, source: agentId})));
+            if (agentData.messages) allMessages.push(...agentData.messages.map(m => ({...m, source: agentId})));
           }
         }
 
         allEvents.sort((a, b) => new Date(a.ts) - new Date(b.ts));
         renderAgents();
         renderTimeline();
+        renderMemoryDashboard();
 
         const lastSync = memory.lastSync ? new Date(memory.lastSync).toLocaleTimeString() : 'never';
         document.getElementById('memoryMeta').textContent =
@@ -951,6 +1001,71 @@
           </div>
         </div>
       `).join('');
+    }
+
+    // ── RENDER MEMORY DASHBOARD ──
+    function switchView(view) {
+      currentView = view;
+      document.getElementById('navTimelineBtn').classList.toggle('active', view === 'timeline');
+      document.getElementById('navMemoryBtn').classList.toggle('active', view === 'memory');
+      
+      document.getElementById('viewTimeline').style.display = view === 'timeline' ? 'flex' : 'none';
+      document.getElementById('viewMemory').style.display = view === 'memory' ? 'flex' : 'none';
+      
+      document.getElementById('viewTitle').textContent = view === 'timeline' ? 'Unified Event Timeline' : 'Agent Memory & State';
+    }
+
+    function renderMemoryDashboard() {
+      // Artifacts
+      const artGrid = document.getElementById('artifactsGrid');
+      if (allArtifacts.length === 0) {
+        artGrid.innerHTML = '<div style="color:var(--text-3);font-size:13px;">No artifacts found.</div>';
+      } else {
+        artGrid.innerHTML = allArtifacts.map(a => {
+          let metaDesc = '';
+          if (a.metadata) {
+            try {
+              const m = JSON.parse(a.metadata);
+              metaDesc = m.Summary || m.ArtifactType || '';
+            } catch(e) {}
+          }
+          return `
+            <div class="agent-card" style="margin:0; display:flex; flex-direction:column; gap: 8px;">
+              <div style="font-family:var(--mono); font-size:12px; font-weight:600; color:var(--accent);">${escHtml(a.name)}</div>
+              <div style="font-size:11px; color:var(--text-2);">${escHtml(a.source)}</div>
+              <div style="font-size:12px; line-height:1.5; color:var(--text); flex:1; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">
+                ${escHtml(metaDesc || a.content.substring(0, 100) + '...')}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Tasks
+      const tasksList = document.getElementById('tasksList');
+      if (allTasks.length === 0) {
+        tasksList.innerHTML = '<div style="color:var(--text-3);font-size:13px;">No background tasks.</div>';
+      } else {
+        tasksList.innerHTML = allTasks.map(t => `
+          <div style="background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:10px;">
+            <div style="font-family:var(--mono); font-size:11px; color:var(--success); margin-bottom:6px;">${escHtml(t.id)}</div>
+            <div style="font-size:11px; font-family:var(--mono); color:var(--text-3); white-space:pre-wrap; max-height:60px; overflow:hidden;">${escHtml(t.preview.trim())}</div>
+          </div>
+        `).join('');
+      }
+
+      // Messages
+      const msgList = document.getElementById('messagesList');
+      if (allMessages.length === 0) {
+        msgList.innerHTML = '<div style="color:var(--text-3);font-size:13px;">No system messages.</div>';
+      } else {
+        msgList.innerHTML = allMessages.slice(-10).reverse().map(m => `
+          <div style="background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:10px;">
+            <div style="font-size:11px; color:var(--text-2); margin-bottom:4px;">${m.type || 'System Event'}</div>
+            <div style="font-size:12px; color:var(--text); word-break:break-word;">${escHtml(JSON.stringify(m.payload || m))}</div>
+          </div>
+        `).join('');
+      }
     }
 
     // ── HELPERS ──

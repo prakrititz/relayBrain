@@ -1,66 +1,42 @@
-# Claude Code Transcript Extraction Analysis
+# Claude Code Persistent State & Memory Extraction
 
-Following the discovery framework in `the_actual_plan.md`, I monitored filesystem changes and located the exact storage mechanisms used by the Claude Code CLI. 
+Based on a forensic analysis of the local environment for Claude Code (`~/.claude`), here is how Anthropic's CLI and Extension manages its state.
 
-## 1. Storage Location
-Unlike some agents that store data within the active repository (e.g., `.openhands` or `.aider`), Claude Code centralizes all its conversation memory globally in the user's home directory.
-
-The base path on Windows is:
+## 1. Storage Location & Session Management
+All persistent state resides in the user's home directory:
 `C:\Users\[Username]\.claude\`
 
-Within this folder, Claude isolates transcripts per workspace under the `projects\` directory. The folder names are derived directly from the absolute file path of the project.
-For example, our OrbitOS project lives here:
-`C:\Users\Prakrititz Borah\.claude\projects\c--Users-Prakrititz-Borah-Downloads-OrbitOS\`
+Unlike Codex which embeds workspace mapping inside the file content, Claude Code maps workspaces structurally:
+- **Location:** `~/.claude/projects/`
+- **Mapping Mechanism:** The directory names are "slugified" absolute paths. For example, `C:\Users\Prakrititz Borah\Downloads\OrbitOS` becomes `c--Users-Prakrititz-Borah-Downloads-OrbitOS`.
 
-## 2. File Format
-Inside the project folder, transcripts are stored as **JSON Lines (JSONL)** files, named using UUIDs (e.g., `90fada3c-efd2-4f46-9fad-ab532ca7035f.jsonl`).
+## 2. Transcripts (The Execution Log)
+- **Location:** `~/.claude/projects/[workspace_slug]/*.jsonl`
+- **Format:** JSONL
+- **Contents:** Contains the exact chat history and tool executions for specific threads.
 
-Each line is a discrete JSON event containing:
-- Timestamp and session identifiers
-- User inputs (prompts)
-- Assistant responses and errors
-- Raw context payloads, including injected tools/skills (`deep-research`, `update-config`, `verify`, etc.)
+## 3. Planning & Markdown Memory
+Claude Code has an explicit planning system that outputs native Markdown.
+- **Location:** `~/.claude/plans/*.md`
+- **Purpose:** Claude generates and stores files here (e.g. `okay-right-now-v2-diff-cheeky-naur.md`) to keep track of multi-step plans. These files are highly valuable targets for Relay's Universal IR.
 
-Example line:
-```json
-{
-  "parentUuid": null,
-  "type": "user",
-  "message": { "role": "user", "content": [{ "type": "text", "text": "hi" }] },
-  "uuid": "7a29a353-3178-4500-8b9e-108b83671ae2",
-  "cwd": "c:\\Users\\Prakrititz Borah\\Downloads\\OrbitOS",
-  "sessionId": "90fada3c-efd2-4f46-9fad-ab532ca7035f"
-}
-```
+## 4. Undo Systems & File History
+Claude Code implements a safety mechanism to rollback changes it makes to files.
+- **Location:** `~/.claude/file-history/[project_uuid]/`
+- **Purpose:** Stores complete backups of files *before* Claude edits them, allowing the CLI to easily undo mistakes without relying on the user's Git history.
 
-## 3. Extraction Method
-Because Claude Code stores standard JSONL files, you do not need an API or cloud authentication to extract a user's local memory.
+## 5. Tool Execution & Shell Context
+When Claude Code runs bash tools, it needs to remember the environment variables and directory state between commands.
+- **Location:** `~/.claude/shell-snapshots/*.sh`
+- **Purpose:** Shell scripts that snapshot the environment (like `snapshot-bash-1779594575806-v6or4f.sh`) so consecutive terminal commands run in the same context.
 
-**To extract Claude Code memory programmatically (Node.js example):**
-```javascript
-const fs = require('fs');
-const path = require('path');
-
-// Target the specific project's hashed folder
-const dir = 'C:/Users/Prakrititz Borah/.claude/projects/c--Users-Prakrititz-Borah-Downloads-OrbitOS/';
-const files = fs.readdirSync(dir).filter(f => f.endsWith('.jsonl'));
-
-let allLogs = [];
-for (const file of files) {
-  const content = fs.readFileSync(path.join(dir, file), 'utf-8');
-  const lines = content.trim().split('\n').filter(Boolean);
-  allLogs.push(...lines.map(l => JSON.parse(l)));
-}
-
-// Convert to a clean JSON array
-fs.writeFileSync('claude_memory_dump.json', JSON.stringify(allLogs, null, 2));
-```
-
-## 4. Other Discoverable Artifacts
-During reverse engineering, we also found:
-- **`~/.claude/sessions/`**: Contains tiny `.json` files mapping active Process IDs (PIDs) to their current session UUIDs.
-- **`~/.claude/.credentials.json`**: Stores the user's OAuth tokens.
-- **`~/.claude/settings.json`**: Global user preferences and keybindings.
+## 6. IDE vs CLI Sessions
+Claude tracks active connections to prevent conflicts:
+- **CLI:** `~/.claude/sessions/` tracks running terminal processes.
+- **Extension:** `~/.claude/ide/` contains `.lock` files to track the VS Code extension's connection to the Claude backend.
 
 ## Conclusion
-Evaluating Claude Code using the matrix in `the_actual_plan.md`, it securely fits the **"High"** ease-of-extraction category. Although the files are slightly obfuscated by moving them out of the working repository and hashing the folder names, they remain completely unencrypted local JSONL files that can be easily parsed for a cross-agent memory system.
+To fully reconstruct Claude Code's state for Relay:
+1. **Transcripts:** Extract from `~/.claude/projects/[slug]/` (Already implemented).
+2. **Plans:** Sync the markdown files in `~/.claude/plans/` as they represent the agent's high-level objectives.
+3. **Rollbacks:** Monitor `~/.claude/file-history/` for diffs of what the AI changed.

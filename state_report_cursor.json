@@ -1,0 +1,52 @@
+{
+  "platform": "Cursor",
+  "workspace_mapping": {
+    "location": "AppData/Roaming/Cursor/User/workspaceStorage/[hash]/workspace.json",
+    "format": "JSON containing the absolute file URI of the workspace folder",
+    "session_link": "Workspace chats are stored in state.vscdb within the same hash directory."
+  },
+  "transcripts": [
+    "AppData/Roaming/Cursor/User/workspaceStorage/[hash]/state.vscdb (SQLite database keys: workbench.panel.aichat.view...)"
+  ],
+  "plans": [
+    ".cursorrules (Workspace root)",
+    ".cursor/rules/*.mdc (Cursor modular rules)"
+  ],
+  "artifacts": [
+    "Composer artifacts and AI-generated code blocks exist directly as diffs in the editor state or SQLite history."
+  ],
+  "tasks": [
+    "Maintained ephemerally in the AI Chat SQLite blobs."
+  ],
+  "memory": [
+    "AppData/Roaming/Cursor/User/workspaceStorage/[hash]/anysphere.cursor-retrieval/ (Embeddings and index mapping)"
+  ],
+  "tool_calls": [
+    "Stored within the AI chat blobs in state.vscdb"
+  ],
+  "code_changes": [
+    "Diffs and code changes are stored within state.vscdb chat blobs."
+  ],
+  "git_state": [
+    "Cursor automatically commits/diffs to local git depending on settings."
+  ],
+  "checkpoints": [
+    "AppData/Roaming/Cursor/User/globalStorage/anysphere.cursor-commits/checkpoints/[UUID]/"
+  ],
+  "sessions": [
+    "AppData/Roaming/Cursor/User/workspaceStorage/[hash]/"
+  ],
+  "version_control": [
+    "anysphere.cursor-commits (Custom rollback and checkpointing system)"
+  ],
+  "high_value_targets": [
+    "state.vscdb (SQLite Chat Blob)",
+    "anysphere.cursor-retrieval (Context indices)",
+    "anysphere.cursor-commits/checkpoints/ (Rollback history)"
+  ],
+  "recommended_extractors": [
+    "Use SQLite driver to extract 'state.vscdb' keys matching 'chat' or 'aichat'.",
+    "Read .cursorrules and .cursor/rules/*.mdc directly as they contain the explicit mental model/instructions.",
+    "Monitor globalStorage/anysphere.cursor-commits/checkpoints/ to retrieve before/after snapshots of multi-file generations."
+  ]
+}
