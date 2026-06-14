@@ -16,7 +16,11 @@ export default function GlobalHeader() {
   return (
     <header className={styles.header}>
       <div className={styles.left}>
-        <div className={styles.logo}>/.relay</div>
+        <div className={styles.logo}>
+          /.
+          <img src="/logos/logo.png" alt="r" style={{ height: 16, objectFit: 'contain', margin: '0 2px' }} />
+          elay
+        </div>
 
         <div style={{ position: 'relative' }}>
           <div className={styles.projectDropdown} onClick={() => setOpen((o) => !o)}>

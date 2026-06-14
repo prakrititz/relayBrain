@@ -19,6 +19,9 @@
   font-weight: 900;
   letter-spacing: 0.1em;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 0;
 }
 
 .projectDropdown {

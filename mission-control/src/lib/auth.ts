@@ -16,6 +16,11 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GITHUB_ID!,
       clientSecret: process.env.GITHUB_SECRET!,
       authorization: { params: { scope: 'read:user user:email repo' } },
+      // Auto-link a GitHub sign-in to an existing user with the same email.
+      // Prevents the `OAuthAccountNotLinked` error ("sign in with a different
+      // account") that occurs when a `users` record exists without a linked
+      // `accounts` record. Safe here because GitHub is the only provider.
+      allowDangerousEmailAccountLinking: true,
     }),
   ],
   callbacks: {

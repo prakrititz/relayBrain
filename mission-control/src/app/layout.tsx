@@ -8,8 +8,11 @@ const inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: '--font-mono' });
 
 export const metadata: Metadata = {
-  title: "Orbit OS - Control Room",
-  description: "Autonomous DevSecOps platform dashboard",
+  title: "/.relay - Shared Memory",
+  description: "Shared Memory for AI Teams",
+  icons: {
+    icon: "/logos/logo.png",
+  },
 };
 
 export default function RootLayout({

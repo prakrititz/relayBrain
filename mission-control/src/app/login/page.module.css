@@ -28,6 +28,10 @@
   font-weight: 900;
   color: var(--text-primary);
   letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
   margin: 0 0 16px 0;
 }
 
