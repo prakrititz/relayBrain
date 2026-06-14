@@ -799,7 +799,19 @@ a {
   .hero-subtitle { font-size: 15px; }
   .hero-actions { flex-direction: column; gap: 14px; }
   .network { height: 590px; margin: 75px 0; }
-  .network-lines { display: none; }
+  .network-lines {
+    display: block;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .network-lines path {
+    stroke: rgba(255, 255, 255, 0.42);
+    stroke-width: 1.5;
+    stroke-dasharray: 5 7;
+  }
+  .network-lines circle {
+    opacity: 0.8;
+  }
   .brain-shell { width: 240px; height: 240px; }
   .tool-node { width: 108px; flex-direction: column; text-align: center; }
   .node-antigravity { top: 40px; left: 8%; }

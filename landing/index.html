@@ -34,38 +34,38 @@
         </div>
       </div>
 
-      <div class="network" aria-label="Antigravity, Claude Code, Codex, and GitHub Copilot connected to one shared brain">
+      <div class="network" aria-label="Antigravity, Claude Code, Cursor, Codex, and GitHub Copilot connected to one shared brain">
         <div class="network-grid" aria-hidden="true"></div>
-        <svg class="network-lines" viewBox="0 0 1000 560" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M170 120 C300 120 320 255 500 280"></path>
-          <path d="M830 120 C700 120 680 255 500 280"></path>
-          <path d="M170 440 C300 440 320 305 500 280"></path>
-          <path d="M830 440 C700 440 680 305 500 280"></path>
-          <path d="M500 58 C500 145 500 190 500 280"></path>
-          <circle cx="170" cy="120" r="3"></circle>
-          <circle cx="830" cy="120" r="3"></circle>
-          <circle cx="170" cy="440" r="3"></circle>
-          <circle cx="830" cy="440" r="3"></circle>
-          <circle cx="500" cy="58" r="3"></circle>
+        <svg class="network-lines" aria-hidden="true">
+          <path data-connector="antigravity"></path>
+          <path data-connector="claude"></path>
+          <path data-connector="codex"></path>
+          <path data-connector="copilot"></path>
+          <path data-connector="cursor"></path>
+          <circle data-endpoint="antigravity" r="3"></circle>
+          <circle data-endpoint="claude" r="3"></circle>
+          <circle data-endpoint="codex" r="3"></circle>
+          <circle data-endpoint="copilot" r="3"></circle>
+          <circle data-endpoint="cursor" r="3"></circle>
         </svg>
 
-        <div class="tool-node node-antigravity">
+        <div class="tool-node node-antigravity" data-tool="antigravity">
           <span class="tool-icon"><img src="antigravity.png" alt=""></span>
           <span>Antigravity</span>
         </div>
-        <div class="tool-node node-claude">
+        <div class="tool-node node-claude" data-tool="claude">
           <span class="tool-icon"><img src="Claude.png" alt=""></span>
           <span>Claude Code</span>
         </div>
-        <div class="tool-node node-codex">
+        <div class="tool-node node-codex" data-tool="codex">
           <span class="tool-icon"><img src="Codex.png" alt=""></span>
           <span>Codex</span>
         </div>
-        <div class="tool-node node-copilot">
+        <div class="tool-node node-copilot" data-tool="copilot">
           <span class="tool-icon"><img src="github-copilot.png" alt=""></span>
           <span>Copilot</span>
         </div>
-        <div class="tool-node node-cursor">
+        <div class="tool-node node-cursor" data-tool="cursor">
           <span class="tool-icon"><img src="cursor.png" alt=""></span>
           <span>Cursor</span>
         </div>
