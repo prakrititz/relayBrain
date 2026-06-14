@@ -1,0 +1,24 @@
+{
+  "workspace": "C:\\Users\\Prakrititz Borah\\Downloads\\OrbitOS",
+  "registeredAt": "2026-06-14T01:39:47.970Z",
+  "agents": {
+    "Antigravity": {
+      "status": "connected",
+      "transcriptPath": "C:\\Users\\Prakrititz Borah\\.gemini\\antigravity-ide\\brain\\56f9135c-2f00-46c5-8899-ac16f108ac58\\.system_generated\\logs\\transcript.jsonl",
+      "connectedAt": "2026-06-14T02:17:54.194Z",
+      "pendingToken": null,
+      "codexMode": null
+    },
+    "Codex": {
+      "status": "connected",
+      "transcriptPath": "C:\\Users\\Prakrititz Borah\\.codex\\sessions\\2026\\06\\14\\rollout-2026-06-14T07-21-42-019ec3d3-cb49-7833-9f9c-ffb1304294d7.jsonl",
+      "connectedAt": "2026-06-14T01:57:52.670Z",
+      "pendingToken": null,
+      "codexMode": "extension-cwd-match"
+    },
+    "Claude Code": {
+      "pendingToken": "RELAY_INIT_HANDSHAKE_CLAUDE_CODE_ISG33L",
+      "status": "handshaking"
+    }
+  }
+}

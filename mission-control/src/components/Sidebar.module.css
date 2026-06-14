@@ -19,6 +19,56 @@
   text-transform: uppercase;
 }
 
+.integrationsList {
+  display: flex;
+  flex-direction: column;
+  padding: 0 16px;
+  gap: 8px;
+}
+
+.initBtn {
+  background: var(--color-surface-3);
+  color: var(--text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.initBtn:hover {
+  background: var(--color-accent);
+  color: white;
+  border-color: var(--color-accent);
+}
+
+.initHint {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.initHint code {
+  font-family: var(--font-mono);
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 4px;
+  border-radius: 2px;
+  color: white;
+}
+
+.spacerSmall {
+  height: 24px;
+  flex-shrink: 0;
+}
+
 .teammatesList {
   display: flex;
   flex-direction: column;

@@ -1,0 +1,124 @@
+Relay
+
+Relay
+Git tracks code. Relay tracks project intelligence.
+
+One project brain. Any coding agent.
+
+License Version
+
+The Human Problem: Why Relay Exists
+AI coding agents are getting incredibly smart, but the way we interact with them is broken. Every IDE, chatbot, and agent has invented its own custom language and siloed instructions:
+
+Claude reads CLAUDE.md
+Cursor reads .cursorrules or .cursor/rules/
+Copilot reads .github/copilot-instructions.md
+Codex / CLI agents read AGENTS.md
+Antigravity reads Artifacts
+The result? Context fragmentation and developer exhaustion.
+
+The "Angry Monkey" Loop
+Today:
+
+Monkey teaches Claude about the project. Claude learns.
+Monkey switches to Cursor. Cursor is clueless.
+Monkey has to teach Cursor the exact same context.
+Monkey switches to a shell agent. Shell agent is hallucinating.
+Monkey teaches again. Monkey angry.
+With Relay:
+
+Monkey teaches Relay once. Relay stores it in a structured, standard format.
+Claude reads Relay.
+Cursor reads Relay.
+Gemini reads Relay.
+Antigravity reads Relay.
+Monkey happy.
+This is not an AI algorithm issue—it is a human workflow issue. Relay solves it by being the translation layer between coding agents.
+
+The Vision: The Interoperability Layer
+Think of Git. Git doesn't care whether you edit code using VS Code, JetBrains, Vim, or Emacs. Git is the shared protocol for source code history.
+
+Relay is the shared protocol for project intelligence.
+
+ Claude ────┐
+ Cursor ────┼───► [ Relay ] ───► The Unified Project Brain
+ Copilot ───┼───┘
+ Gemini ────┘
+Instead of lock-in to a specific editor's SQLite database or ephemeral chat history, Relay decouples context. If a better model or agent drops tomorrow, you switch instantly without losing a single drop of project history, decisions, or architectural intent.
+
+The Active Debate: Structured Markdown vs. RAG
+A massive engineering shift is happening in AI codebase intelligence. While most platforms build complex, non-deterministic RAG (Retrieval-Augmented Generation) pipelines, research and production outcomes show a surprising truth: human-in-the-loop, structured context files beat raw vector search.
+
+The Vector Trap in Production
+Traditional RAG breaks your codebase into arbitrary, flattened chunks (e.g., 500-token blocks) and stores them in vector databases. For code, this is disastrous:
+
+Scope Loss: RAG retrieves a single function block but misses its import dependencies, parent class variables, or calling context.
+Multi-Hop Failure: Asking architectural questions (e.g., "How does authentication flow through this project?") requires global codebase reasoning. RAG cannot stitch disconnected code fragments together.
+The Long-Context & Markdown Solution
+Modern models (like Claude 3.5 Sonnet, Gemini 1.5 Pro, and GPT-4o) boast context windows from 200k to 2M tokens. Recent research, such as "Can Long-Context Language Models Subsume Retrieval, RAG, SQL, and More?" (arXiv:2406.13121), demonstrates that long-context models routinely match or outperform complex RAG systems on codebase understanding when the context is presented cohesively.
+
+When structured logically in Markdown, models leverage their attention mechanisms to map relationships natively:
+
+Markdown files preserve hierarchical outlines (folders, files, classes, methods).
+Human developers can easily audit, edit, and curate the files.
+Changes are tracked natively via git diffs.
+Relay leans directly into this paradigm. Instead of building generic vector search infrastructure, Relay focuses on generating, syncing, and translating structured markdown context files.
+
+How it Works: Universal IR (Intermediate Representation)
+Relay works exactly like a compiler. It ingests agent-specific context files, converts them into a Universal IR, and translates them back out to match the native formats of whichever tools you use.
+
+The Lifecycle of Context
+  Ingest Sources                    Relay IR (Universal)                 Target Synced Formats
+ ┌─────────────────┐                                                    ┌───────────────────────────┐
+ │ CLAUDE.md       │ ───────┐                                     ┌───► │ CLAUDE.md                 │
+ └─────────────────┘        │                                     │     └───────────────────────────┘
+ ┌─────────────────┐        │       ┌─────────────────────┐       │     ┌───────────────────────────┐
+ │ .cursorrules    │ ───────┼─────► │                     │ ──────┼───► │ .cursor/rules/relay.mdc   │
+ └─────────────────┘        │       │  Markdown Document  │       │     └───────────────────────────┘
+ ┌─────────────────┐        │       │  Trees (.relay/)    │       │     ┌───────────────────────────┐
+ │ copilot-inst    │ ───────┘       └─────────────────────┘       ├───► │ copilot-instructions.md   │
+ └─────────────────┘                                              │     └───────────────────────────┘
+ ┌─────────────────┐                                              │     ┌───────────────────────────┐
+ │ Agent Memory    │ ─────────────────────────────────────────────┘───► │ antigravity_artifact.md   │
+ └─────────────────┘                                                    └───────────────────────────┘
+The .relay/ Directory: Human-Readable & Git-Friendly
+We don't hide your project's memory in binary vector databases (memory.db) or cloud black-boxes. Relay structures your workspace context in human-readable Markdown files.
+
+Every AI agent, human developer, and version control system (Git) natively understands Markdown.
+
+your-project/
+└── .relay/
+    ├── project.md        # High-level overview, tech stack, and goals
+    ├── architecture.md   # Structural diagrams, folder layout, and component boundaries
+    ├── decisions.md      # Architecture Decision Records (ADRs) and design trade-offs
+    ├── current_task.md   # Active goals, TODOs, and context markers
+    └── failures.md       # Anti-patterns, bugs encountered, and what NOT to do
+Why this structure wins:
+Zero Lock-in: You can view, edit, or delete memories with a simple text editor.
+Diffable: Every change in context is tracked in your Git history.
+Interoperable: Future agents can read it instantly without custom integrations.
+Commands
+Relay features a lightweight CLI to keep your workspace aligned.
+
+# Initialize Relay in the current workspace
+relay init
+
+# Import memory from existing .cursorrules, CLAUDE.md, or markdown files
+relay import
+
+# Automatically compile Relay IR into target agent instructions
+relay sync
+When you run relay sync, Relay automatically generates and updates:
+
+CLAUDE.md
+.cursor/rules/relay.mdc
+.github/copilot-instructions.md
+AGENTS.md
+So every agent you open operates with the exact same updated project intelligence.
+
+Philosophy: The Moat is the Translation Layer
+Vectors are becoming commodity infrastructure. Building another memory database or a slightly faster vector retrieval loop is a race to the bottom.
+
+Relay's focus is the translation layer. By reverse-engineering agent-specific interfaces, instructions, and prompt-injection protocols, Relay bridges the gap between how different agents process information.
+
+Let the agents focus on executing code. Relay will handle the project brain.

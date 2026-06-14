@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relay — Agent Memory Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0b0d;
+      --surface: #111318;
+      --surface-2: #181c25;
+      --border: #1f2535;
+      --accent: #6c63ff;
+      --accent-dim: rgba(108, 99, 255, 0.15);
+      --success: #22d07a;
+      --success-dim: rgba(34, 208, 122, 0.12);
+      --warning: #f5a623;
+      --warning-dim: rgba(245, 166, 35, 0.12);
+      --error: #ff4d6d;
+      --error-dim: rgba(255, 77, 109, 0.12);
+      --text: #e8eaf6;
+      --text-2: #8892b0;
+      --text-3: #4a5568;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: 56px 1fr;
+      grid-template-columns: 340px 1fr;
+    }
+
+    /* ── HEADER ── */
+    header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo-sub { font-size: 12px; color: var(--text-2); font-weight: 400; margin-left: 4px; }
+
+    .header-status {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-2);
+    }
+
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); }
+    .dot.live { background: var(--success); box-shadow: 0 0 6px var(--success); animation: pulse 2s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+    }
+
+    /* ── LEFT PANEL ── */
+    .left-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+    }
+
+    .section {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--text-3);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    /* ── WORKSPACE REGISTER ── */
+    .ws-input {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: var(--text);
+      font-family: var(--mono);
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 10px;
+    }
+    .ws-input:focus { border-color: var(--accent); }
+
+    .btn {
+      width: 100%;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-primary:hover { background: #7c75ff; }
+    .btn-primary:disabled { background: var(--border); cursor: not-allowed; color: var(--text-3); }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-outline:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── WORKSPACE BADGE ── */
+    .ws-badge {
+      background: var(--success-dim);
+      border: 1px solid var(--success);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--success);
+      word-break: break-all;
+    }
+
+    /* ── AGENT CARDS ── */
+    .agent-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 10px;
+      transition: border-color 0.2s;
+    }
+
+    .agent-card:hover { border-color: var(--accent); }
+
+    .agent-card.connected {
+      border-color: var(--success);
+      background: var(--success-dim);
+    }
+
+    .agent-card.handshaking {
+      border-color: var(--warning);
+      background: var(--warning-dim);
+    }
+
+    .agent-card.error {
+      border-color: var(--error);
+      background: var(--error-dim);
+    }
+
+    .agent-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .agent-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .agent-icon.antigravity { background: linear-gradient(135deg, #667eea, #764ba2); }
+    .agent-icon.codex { background: linear-gradient(135deg, #11998e, #38ef7d); }
+    .agent-icon.claude { background: linear-gradient(135deg, #f7971e, #ffd200); }
+
+    .agent-name { font-weight: 700; font-size: 14px; }
+    .agent-desc { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+
+    .agent-status {
+      margin-left: auto;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+
+    .status-idle { background: rgba(255,255,255,0.05); color: var(--text-3); }
+    .status-handshaking { background: var(--warning-dim); color: var(--warning); }
+    .status-connected { background: var(--success-dim); color: var(--success); }
+    .status-error { background: var(--error-dim); color: var(--error); }
+
+    .agent-path {
+      font-size: 10px;
+      font-family: var(--mono);
+      color: var(--text-2);
+      background: rgba(255,255,255,0.04);
+      border-radius: 4px;
+      padding: 4px 8px;
+      margin-bottom: 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .agent-event-count {
+      font-size: 11px;
+      color: var(--success);
+      margin-bottom: 8px;
+    }
+
+    .agent-error { font-size: 11px; color: var(--error); margin-bottom: 8px; word-break: break-word; }
+
+    .agent-btns { display: flex; gap: 6px; }
+    .agent-btns .btn { flex: 1; font-size: 11px; padding: 7px; }
+
+    /* ── TOKEN DISPLAY ── */
+    .token-box {
+      background: rgba(108, 99, 255, 0.08);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--accent);
+      word-break: break-all;
+    }
+
+    /* ── RIGHT PANEL: MEMORY VIEWER ── */
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .memory-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .memory-header h2 { font-size: 15px; font-weight: 700; }
+    .memory-header p { font-size: 12px; color: var(--text-2); }
+    .memory-header .btn { width: auto; padding: 8px 16px; font-size: 12px; margin-left: auto; }
+
+    .memory-filters {
+      display: flex;
+      gap: 8px;
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .filter-chip {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-2);
+      transition: all 0.2s;
+    }
+    .filter-chip.active { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+    .filter-chip:hover { border-color: var(--accent); }
+
+    .timeline {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .event-card {
+      display: flex;
+      gap: 12px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .event-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .event-avatar.user { background: var(--accent-dim); color: var(--accent); }
+    .event-avatar.assistant { background: var(--success-dim); color: var(--success); }
+
+    .event-body { flex: 1; min-width: 0; }
+
+    .event-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+    }
+
+    .event-source {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+
+    .src-antigravity { background: rgba(102, 126, 234, 0.2); color: #a5b4fc; }
+    .src-codex { background: rgba(17, 153, 142, 0.2); color: #6ee7b7; }
+    .src-claude { background: rgba(247, 151, 30, 0.2); color: #fcd34d; }
+
+    .event-role { font-size: 11px; color: var(--text-3); }
+    .event-ts { font-size: 10px; color: var(--text-3); margin-left: auto; font-family: var(--mono); }
+
+    .event-content {
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.6;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 12px;
+      color: var(--text-3);
+    }
+
+    .empty-state .icon { font-size: 48px; }
+    .empty-state h3 { font-size: 16px; color: var(--text-2); }
+    .empty-state p { font-size: 13px; text-align: center; max-width: 300px; line-height: 1.6; }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 1000;
+      animation: slideIn 0.3s ease;
+      max-width: 360px;
+    }
+    .toast.success { border-color: var(--success); }
+    .toast.error { border-color: var(--error); }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <!-- HEADER -->
+  <header>
+    <span class="logo">⬡ Relay</span>
+    <span class="logo-sub">Agent Memory Hub</span>
+    <div class="header-status">
+      <div class="dot" id="serverDot"></div>
+      <span id="serverStatus">Connecting to backend...</span>
+    </div>
+  </header>
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <!-- Workspace -->
+    <div class="section">
+      <div class="section-label">Workspace</div>
+      <div id="wsRegistered" style="display:none">
+        <div class="ws-badge" id="wsBadge"></div>
+        <div style="margin-top:10px">
+          <button class="btn btn-outline" onclick="changeWorkspace()">Change Workspace</button>
+        </div>
+      </div>
+      <div id="wsForm">
+        <input class="ws-input" id="wsPath" type="text" placeholder="C:\Users\...\MyProject" />
+        <button class="btn btn-primary" onclick="registerWorkspace()">
+          <span>Register Workspace</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Agent Integrations -->
+    <div class="section">
+      <div class="section-label">Agent Integrations</div>
+      <div id="agentsContainer">
+        <div id="agentsLocked" style="color:var(--text-3);font-size:12px;text-align:center;padding:20px 0;">
+          Register a workspace to connect agents
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="memory-header">
+      <div>
+        <h2>Memory Timeline</h2>
+        <p id="memoryMeta">No workspace registered</p>
+      </div>
+      <button class="btn btn-outline" id="syncBtn" onclick="syncMemory(true)" style="display:none">
+        ↻ Sync Memory
+      </button>
+    </div>
+    <div class="memory-filters" id="filterBar" style="display:none">
+      <button class="filter-chip active" onclick="setFilter('all', this)">All Agents</button>
+      <button class="filter-chip" onclick="setFilter('Antigravity', this)">Antigravity</button>
+      <button class="filter-chip" onclick="setFilter('Codex', this)">Codex</button>
+      <button class="filter-chip" onclick="setFilter('Claude Code', this)">Claude Code</button>
+      <button class="filter-chip" onclick="setFilter('user', this)">User Only</button>
+      <button class="filter-chip" onclick="setFilter('assistant', this)">Assistant Only</button>
+    </div>
+    <div class="timeline" id="timeline">
+      <div class="empty-state">
+        <div class="icon">🔗</div>
+        <h3>No Memory Loaded</h3>
+        <p>Register a workspace and connect your agents to see their unified memory timeline here.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:3001';
+    let workspacePath = localStorage.getItem('relay_workspace') || '';
+    let allEvents = [];
+    let activeFilter = 'all';
+
+    const AGENTS = [
+      { id: 'Antigravity', icon: '⬡', cls: 'antigravity', desc: 'Antigravity IDE agent' },
+      { id: 'Codex',       icon: '⚡', cls: 'codex',       desc: 'OpenAI Codex CLI agent' },
+      { id: 'Claude Code', icon: '◆', cls: 'claude',       desc: 'Anthropic Claude Code CLI' },
+    ];
+
+    const agentState = {};
+    AGENTS.forEach(a => agentState[a.id] = { status: 'idle', token: null, transcriptPath: null, eventCount: 0, error: null });
+
+    // ── SERVER HEALTH CHECK ──
+    async function checkServer() {
+      try {
+        await fetch(`${API}/api/memory?workspacePath=.`);
+        document.getElementById('serverDot').classList.add('live');
+        document.getElementById('serverStatus').textContent = 'Backend connected';
+      } catch {
+        document.getElementById('serverStatus').textContent = 'Backend offline — run: node backend/server.js';
+      }
+    }
+
+    // ── REGISTER WORKSPACE ──
+    async function registerWorkspace() {
+      const path = document.getElementById('wsPath').value.trim();
+      if (!path) return showToast('Please enter a workspace path', 'error');
+      try {
+        const res = await fetch(`${API}/api/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workspacePath: path }),
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+        workspacePath = path;
+        localStorage.setItem('relay_workspace', path);
+        onWorkspaceSet();
+        showToast('✓ Workspace registered! .relay/ folder created.', 'success');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function changeWorkspace() {
+      workspacePath = '';
+      localStorage.removeItem('relay_workspace');
+      document.getElementById('wsRegistered').style.display = 'none';
+      document.getElementById('wsForm').style.display = 'block';
+      document.getElementById('agentsLocked').style.display = 'block';
+    }
+
+    function onWorkspaceSet() {
+      document.getElementById('wsForm').style.display = 'none';
+      document.getElementById('wsRegistered').style.display = 'block';
+      document.getElementById('wsBadge').textContent = workspacePath;
+      document.getElementById('agentsLocked').style.display = 'none';
+      document.getElementById('syncBtn').style.display = 'flex';
+      document.getElementById('filterBar').style.display = 'flex';
+      document.getElementById('memoryMeta').textContent = `Workspace: ${workspacePath.split(/[/\\]/).pop()}`;
+      renderAgents();
+      syncMemory();
+    }
+
+    // ── RENDER AGENT CARDS ──
+    function renderAgents() {
+      const container = document.getElementById('agentsContainer');
+      container.innerHTML = '';
+      AGENTS.forEach(agent => {
+        const state = agentState[agent.id];
+        const card = document.createElement('div');
+        card.className = `agent-card ${state.status === 'connected' ? 'connected' : state.status === 'error' ? 'error' : state.status === 'handshaking' ? 'handshaking' : ''}`;
+        card.id = `card-${agent.id.replace(' ', '-')}`;
+
+        const statusLabel = { idle: 'NOT CONNECTED', handshaking: 'HANDSHAKING...', connected: 'CONNECTED', error: 'ERROR' };
+        const statusCls = { idle: 'status-idle', handshaking: 'status-handshaking', connected: 'status-connected', error: 'status-error' };
+
+        card.innerHTML = `
+          <div class="agent-header">
+            <div class="agent-icon ${agent.cls}">${agent.icon}</div>
+            <div>
+              <div class="agent-name">${agent.id}</div>
+              <div class="agent-desc">${agent.desc}</div>
+            </div>
+            <span class="agent-status ${statusCls[state.status]}">${statusLabel[state.status]}</span>
+          </div>
+          ${state.status === 'handshaking' && state.token ? `<div class="token-box">${state.token}</div><div style="font-size:11px;color:var(--warning);margin-bottom:8px;">Sending token to ${agent.id} CLI automatically…</div>` : ''}
+          ${state.transcriptPath ? `<div class="agent-path" title="${state.transcriptPath}">${state.transcriptPath}</div>` : ''}
+          ${state.eventCount ? `<div class="agent-event-count">✓ ${state.eventCount} events loaded</div>` : ''}
+          ${state.error ? `<div class="agent-error">✗ ${state.error}</div>` : ''}
+          <div class="agent-btns">
+            ${state.status !== 'connected' 
+              ? `<button class="btn btn-primary" onclick="startHandshake('${agent.id}')" ${state.status === 'handshaking' || !workspacePath ? 'disabled' : ''}>
+                  ${state.status === 'handshaking' ? '<div class="spinner"></div> Connecting...' : '⚡ Connect'}
+                </button>`
+              : `<button class="btn btn-outline" onclick="startHandshake('${agent.id}')">↻ Reconnect</button>
+                 <button class="btn btn-primary" onclick="syncMemory()">Sync</button>`
+            }
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // ── HANDSHAKE + CONNECT (AUTOMATIC) ──
+    async function startHandshake(agentId) {
+      if (!workspacePath) return showToast('Register a workspace first', 'error');
+      agentState[agentId].status = 'handshaking';
+      agentState[agentId].error = null;
+      renderAgents();
+
+      try {
+        // Step 1: Generate token + auto-send to CLI
+        const hsRes = await fetch(`${API}/api/handshake`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workspacePath, agent: agentId }),
+        });
+        const hsData = await hsRes.json();
+        if (!hsData.ok) throw new Error(hsData.error);
+        agentState[agentId].token = hsData.token;
+        renderAgents();
+
+        // Step 2: Wait briefly for CLI to write transcript, then grep + connect
+        await new Promise(r => setTimeout(r, 2000));
+
+        const connRes = await fetch(`${API}/api/connect`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workspacePath, agent: agentId }),
+        });
+        const connData = await connRes.json();
+        if (!connData.ok) throw new Error(connData.error);
+
+        agentState[agentId].status = 'connected';
+        agentState[agentId].transcriptPath = connData.transcriptPath;
+        agentState[agentId].eventCount = connData.eventCount;
+        agentState[agentId].token = null;
+        renderAgents();
+        showToast(`✓ ${agentId} connected — ${connData.eventCount} events loaded`, 'success');
+        syncMemory();
+      } catch (err) {
+        agentState[agentId].status = 'error';
+        agentState[agentId].error = err.message;
+        renderAgents();
+        showToast(err.message, 'error');
+      }
+    }
+
+    // ── SYNC MEMORY: trigger backend re-parse then fetch fresh memory ──
+    let syncInProgress = false;
+    async function syncMemory(showToastOnSuccess = false) {
+      if (!workspacePath || syncInProgress) return;
+      syncInProgress = true;
+
+      const btn = document.getElementById('syncBtn');
+      if (btn) btn.textContent = '↻ Syncing...';
+
+      try {
+        // 1. Tell backend to re-read all transcripts and rebuild memory.json
+        await fetch(`${API}/api/sync`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workspacePath }),
+        });
+
+        // 2. Fetch the freshly built memory
+        const res = await fetch(`${API}/api/memory?workspacePath=${encodeURIComponent(workspacePath)}`);
+        const data = await res.json();
+        if (!data.ok) return;
+
+        const memory = data.memory;
+        allEvents = [];
+
+        for (const [agentId, agentData] of Object.entries(memory.agents || {})) {
+          if (agentData.status === 'connected') {
+            agentState[agentId] = {
+              status: 'connected',
+              transcriptPath: agentData.transcriptPath,
+              eventCount: agentData.eventCount || 0,
+              error: null,
+              token: null,
+            };
+            allEvents.push(...(agentData.events || []));
+          }
+        }
+
+        allEvents.sort((a, b) => new Date(a.ts) - new Date(b.ts));
+        renderAgents();
+        renderTimeline();
+
+        const lastSync = memory.lastSync ? new Date(memory.lastSync).toLocaleTimeString() : 'never';
+        document.getElementById('memoryMeta').textContent =
+          `${allEvents.length} events · last sync: ${lastSync}`;
+
+        if (showToastOnSuccess) showToast(`✓ Synced — ${allEvents.length} total events`, 'success');
+      } catch (err) {
+        console.error('Sync error:', err);
+      } finally {
+        syncInProgress = false;
+        if (btn) btn.textContent = '↻ Sync Memory';
+      }
+    }
+
+    // ── RENDER TIMELINE ──
+    function setFilter(filter, btn) {
+      activeFilter = filter;
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      renderTimeline();
+    }
+
+    function renderTimeline() {
+      const timeline = document.getElementById('timeline');
+      let events = allEvents;
+
+      if (activeFilter !== 'all') {
+        events = events.filter(e => {
+          if (activeFilter === 'user' || activeFilter === 'assistant') return e.role === activeFilter;
+          return e.source === activeFilter;
+        });
+      }
+
+      if (events.length === 0) {
+        timeline.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">${allEvents.length === 0 ? '🔗' : '🔍'}</div>
+            <h3>${allEvents.length === 0 ? 'No Memory Loaded' : 'No Results'}</h3>
+            <p>${allEvents.length === 0 
+              ? 'Connect at least one agent to populate the memory timeline.'
+              : 'No events match the current filter.'}</p>
+          </div>`;
+        return;
+      }
+
+      const srcCls = { 'Antigravity': 'src-antigravity', 'Codex': 'src-codex', 'Claude Code': 'src-claude' };
+
+      timeline.innerHTML = events.map(e => `
+        <div class="event-card">
+          <div class="event-avatar ${e.role}">${e.role === 'user' ? 'U' : 'A'}</div>
+          <div class="event-body">
+            <div class="event-meta">
+              <span class="event-source ${srcCls[e.source] || ''}">${e.source}</span>
+              <span class="event-role">${e.role}</span>
+              <span class="event-ts">${e.ts ? new Date(e.ts).toLocaleTimeString() : ''}</span>
+            </div>
+            <div class="event-content">${escHtml(e.content)}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ── HELPERS ──
+    function escHtml(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function showToast(msg, type = 'success') {
+      const existing = document.querySelector('.toast');
+      if (existing) existing.remove();
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 4000);
+    }
+
+    // ── INIT ──
+    checkServer();
+    if (workspacePath) {
+      document.getElementById('wsPath').value = workspacePath;
+      onWorkspaceSet();
+    }
+    setInterval(checkServer, 10000);
+    // Auto-sync every 5 seconds to pick up new events from any connected agent
+    setInterval(() => syncMemory(false), 5000);
+  </script>
+</body>
+</html>

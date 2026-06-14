@@ -1,0 +1,251 @@
+# Relay — Landing Page Prompt
+## For: AI Coding Agents / Frontend Generators
+
+---
+
+## The Prompt
+
+Build a minimal, high-polish landing page for a product called **Relay**.
+
+---
+
+### Product
+
+Relay is a shared memory layer for AI-assisted dev teams. When you use Claude Code, Copilot, Codex, or Cursor — your AI only knows what YOU know. Relay makes every AI on your team share one brain. Decisions, conventions, architecture choices, bugs fixed — stored once, known by everyone's AI instantly. Bring your own tool, bring your own credits. Relay just connects the brains.
+
+---
+
+### Visual Direction
+
+**Strict constraints:**
+- Background: pure black `#000000` only. No gradients on the background, no dark greys, no navy. Black.
+- Primary text: white `#ffffff`
+- Accent: single white with varying opacity for hierarchy. No color accents at all — no blue, no purple, no green. Pure monochrome.
+- The ONE exception: a very subtle `#ffffff08` or `#ffffff05` for card/surface backgrounds — barely visible, just enough to separate panels from the void.
+
+**Typography:**
+- Display / hero headline: `Space Grotesk` — bold, wide, slightly geometric. Not Inter, not Geist, not the default.
+- Body / UI text: `Inter` at 400/450 weight
+- Code / memory entries / monospace moments: `JetBrains Mono`
+- All labels and eyebrows: uppercase, `0.12em` letter spacing, `opacity: 0.4`, small (11-12px)
+
+**Aesthetic:**
+- Brutally minimal. Every element must justify its existence.
+- No illustrations. No icons unless functional.
+- No rounded hero cards with gradients. No glowing orbs. No particle effects.
+- The only animation allowed: a single typewriter/stream effect in the hero showing memory entries appearing one by one. Everything else is static or subtle fade-in on scroll.
+- Whitespace is aggressive. Sections breathe.
+- Feels like: Linear's website met a zine. Spare, confident, slightly cold.
+
+---
+
+### Page Structure
+
+#### 1. NAV
+```
+Relay                                    [Sign in]  [Get early access →]
+```
+- Logo left: "Relay" in Space Grotesk bold, white, no icon
+- Right: two links, minimal. "Get early access" has a `→` arrow, no button border — just text with arrow
+- Sticky, `background: #000`, `border-bottom: 1px solid #ffffff0f`
+- No hamburger menu needed
+
+---
+
+#### 2. HERO
+
+Centered layout. Maximum width 680px. Lots of vertical padding.
+
+**Eyebrow label** (above headline):
+```
+SHARED MEMORY FOR AI TEAMS
+```
+Small, uppercase, `opacity: 0.35`, Space Grotesk medium
+
+**Headline** (2 lines, large — 64-72px desktop):
+```
+Your AI knows what you know.
+Now it knows what your team knows.
+```
+White. Space Grotesk bold. No gradient text. No color. Just white on black, large.
+
+**Subheadline** (below, 18px, `opacity: 0.55`):
+```
+Claude Code, Copilot, Codex, Cursor — bring whatever you use.
+Relay makes every AI on your team share one brain.
+```
+
+**CTA** (below subheadline):
+```
+[Get early access]   No subscription. Bring your own credits.
+```
+- Button: white background, black text, Space Grotesk medium, no border radius (or very subtle 4px max), 0 box shadow
+- Secondary note right of button: small, `opacity: 0.35`, inline
+
+**Live memory stream** (below CTA — this is the signature element):
+
+A terminal/stream window, dark surface (`#ffffff06`), `border: 1px solid #ffffff0f`, showing memory entries appearing one by one with a typewriter effect:
+
+```
+[10:04]  Pony / Claude Code      → auth: JWT over sessions (stateless, mobile-ready)
+[10:06]  Unnath / Copilot        → rate_limit: 100 req/min per IP, express-rate-limit
+[10:09]  Arjun / Codex           → proposed: use tRPC instead of REST  [2 votes pending]
+[10:11]  MEMORY                  → #48 committed — "tRPC decision" (3/3 voted ✅)
+[10:12]  new member joined       → synced 847 memory entries in 0.3s
+```
+
+Font: JetBrains Mono, 13px. Lines appear one by one, 1.2s apart, looping. Left-aligned. Color: white for the memory content, `opacity: 0.35` for the timestamp and source label. Green `#4ade80` ONLY for the ✅ symbol — this is the single color exception. No other color anywhere.
+
+Above the stream window, a label: `LIVE WORKSPACE — 3 MEMBERS ONLINE` in the eyebrow style.
+
+---
+
+#### 3. PROBLEM SECTION
+
+Left-aligned text block. No cards, no icons.
+
+**Label:** `THE PROBLEM`
+
+**Headline (36-40px):**
+```
+Every AI on your team
+starts from zero.
+```
+
+**Body paragraphs** (16px, `opacity: 0.6`, line-height 1.7):
+```
+You decided to use JWT. Your teammate's Copilot doesn't know that.
+You fixed a bug three weeks ago. The new hire's Claude Code will suggest
+the same broken pattern.
+
+Every decision lives in someone's head, a random Slack message,
+or gets rediscovered the hard way.
+
+The AI tools are getting smarter. The team memory isn't.
+```
+
+No images. Just text. The copy does the work.
+
+---
+
+#### 4. HOW IT WORKS
+
+Three steps. Horizontal on desktop, vertical on mobile.
+
+No numbered markers unless they feel right — use a simple divider line between steps instead.
+
+**Step 1**
+```
+Label:    BRING YOUR OWN TOOL
+Headline: Claude Code. Copilot. Codex. Whatever.
+Body:     No new subscriptions. No platform lock-in. Connect
+          whichever AI tool you already use and pay for.
+```
+
+**Step 2**
+```
+Label:    DECISIONS GET REMEMBERED
+Headline: Your AI proposes. Your team votes.
+Body:     When your agent makes an architectural decision, Relay
+          asks the team to confirm it. Majority commits it to
+          shared memory. One source of truth, forever.
+```
+
+**Step 3**
+```
+Label:    EVERY AI KNOWS EVERYTHING
+Headline: New teammate joins. Synced in seconds.
+Body:     847 decisions, conventions, and fixes. Instantly available
+          to their AI — whichever tool they use.
+```
+
+Style: each step is separated by a thin `1px solid #ffffff0a` horizontal rule. Text only, no icon boxes, no cards with borders, no numbered circles.
+
+---
+
+#### 5. FEATURES — SPARSE GRID
+
+2x2 grid of feature blurbs. No cards. Just label + one line of text, separated by hairline rules.
+
+```
+CROSS-TOOL MEMORY              TEAM PRESENCE
+Works with any AI coding       See what every teammate's
+tool via a simple extension.   agent is working on, live.
+
+VOTE ON DECISIONS              MEMORY SEARCH
+Propose changes. Team votes.   Ask anything. "Did we decide
+Auto-commits on majority.      on rate limiting?" It knows.
+```
+
+Grid lines: `1px solid #ffffff08`. No background fills. Pure grid.
+
+---
+
+#### 6. SOCIAL PROOF / TRACTION
+
+Single centered line. No logos, no avatars.
+
+```
+Built at IIIT Bangalore  ·  Agentic Systems Track  ·  5-day build
+```
+
+`opacity: 0.3`, small, centered. That's it.
+
+---
+
+#### 7. FINAL CTA
+
+Full-width section. Centered. Large.
+
+**Headline:**
+```
+Your team's AI is only as smart
+as your team's memory.
+```
+
+**CTA:**
+```
+[Get early access →]
+```
+
+Same button style as hero. White on black.
+
+Below button:
+```
+Free during beta  ·  No credit card  ·  Bring your own AI credits
+```
+Small, `opacity: 0.3`.
+
+---
+
+#### 8. FOOTER
+
+Minimal one-liner:
+```
+Relay  ·  2025  ·  Built with Claude
+```
+`opacity: 0.2`. Centered or left-aligned. No links needed.
+
+---
+
+### Technical Notes for the Agent
+
+- Pure HTML + CSS + minimal vanilla JS (for the typewriter stream animation only)
+- No frameworks required unless you prefer React
+- Google Fonts: load `Space Grotesk` (700) and `Inter` (400, 450) and `JetBrains Mono` (400)
+- Fully responsive — mobile breakpoint at 768px: hero text drops to 40px, 3-step section goes vertical, grid goes 1-column
+- No external libraries, no Tailwind unless it's already in your environment
+- The typewriter stream in the hero is the ONLY animation. Everything else is either static or a single `opacity: 0 → 1` fade triggered by IntersectionObserver on scroll. No transforms, no slides, no bounces.
+- `prefers-reduced-motion` media query must disable the typewriter animation and replace with static content
+- No images, no SVG illustrations, no background textures
+
+---
+
+### What This Page Is NOT
+
+- Not a SaaS homepage with a feature grid and testimonial carousel
+- Not a dark-mode startup template with purple gradients and glowing cards
+- Not a "we use AI" marketing page with robot illustrations
+- Not cluttered. If you're adding an element and you're not sure it's needed — remove it.
+
+The page should feel like the product itself: quiet, precise, and smarter than it looks.

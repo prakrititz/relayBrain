@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import styles from './Sidebar.module.css';
 
 const teammates = [
@@ -18,8 +18,33 @@ const proposals = [
 ];
 
 export default function Sidebar() {
+  const [initCode, setInitCode] = useState<{agent: string, code: string} | null>(null);
+
+  const handleInit = (agent: string) => {
+    const code = `RELAY_INIT_HANDSHAKE_${agent.toUpperCase()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    setInitCode({ agent, code });
+    navigator.clipboard.writeText(code);
+    
+    // Auto-hide the hint after 5 seconds
+    setTimeout(() => setInitCode(null), 5000);
+  };
+
   return (
     <aside className={styles.sidebar}>
+      <div className={styles.sectionTitle}>AGENT INTEGRATIONS</div>
+      <div className={styles.integrationsList}>
+        <button className={styles.initBtn} onClick={() => handleInit('Antigravity')}>Connect Antigravity</button>
+        <button className={styles.initBtn} onClick={() => handleInit('Codex')}>Connect Codex</button>
+        {initCode && (
+          <div className={styles.initHint}>
+            Copied: <code>{initCode.code}</code><br/>
+            Paste this into {initCode.agent} to link the transcript!
+          </div>
+        )}
+      </div>
+
+      <div className={styles.spacerSmall}></div>
+
       <div className={styles.sectionTitle}>TEAMMATES</div>
       
       <div className={styles.teammatesList}>
