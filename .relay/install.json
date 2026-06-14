@@ -1,0 +1,39 @@
+{
+  "version": "0.1.0",
+  "installedAt": "2026-06-14T15:28:29.020Z",
+  "workspace": "C:\\Users\\unnat\\Documents\\GitHub\\OrbitOS",
+  "cursor": {
+    "skill": true,
+    "rule": true
+  },
+  "hooks": {
+    "installed": true,
+    "hooksDir": "C:\\Users\\unnat\\Documents\\GitHub\\OrbitOS\\.relay\\hooks",
+    "cursor": {
+      "hooksJson": "C:\\Users\\unnat\\Documents\\GitHub\\OrbitOS\\.cursor\\hooks.json"
+    },
+    "claude": {
+      "settingsPath": "C:\\Users\\unnat\\Documents\\GitHub\\OrbitOS\\.claude\\settings.json"
+    },
+    "codex": {
+      "hooksPath": "C:\\Users\\unnat\\Documents\\GitHub\\OrbitOS\\.codex\\hooks.json"
+    },
+    "copilot": {
+      "hooksPath": "C:\\Users\\unnat\\Documents\\GitHub\\OrbitOS\\.github\\hooks\\relay-os.json"
+    },
+    "antigravity": {
+      "hooksPath": "C:\\Users\\unnat\\Documents\\GitHub\\OrbitOS\\.agents\\hooks.json"
+    },
+    "relayCommand": "node \"C:/Users/unnat/Documents/GitHub/OrbitOS/bin/relay.js\""
+  },
+  "relayCommand": "node \"C:/Users/unnat/Documents/GitHub/OrbitOS/bin/relay.js\"",
+  "instructionFiles": [
+    "CLAUDE.md",
+    "AGENTS.md",
+    ".github\\copilot-instructions.md",
+    ".cursorrules",
+    ".relay/antigravity-instructions.md"
+  ],
+  "bootstrap": ".relay/AGENT_BOOTSTRAP.md",
+  "rootPointer": "RELAY.md"
+}

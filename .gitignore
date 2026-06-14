@@ -9,7 +9,6 @@ coverage/
 out/
 
 # Runtime / local state
-.relay/
 .env
 .env.*
 *.log
