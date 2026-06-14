@@ -5,14 +5,16 @@ const { spawnSync, execSync } = require('child_process');
 const { parseAntigravity } = require('./parsers/antigravity');
 const { parseCodex } = require('./parsers/codex');
 const { parseClaude } = require('./parsers/claude');
+const { parseCopilot } = require('./parsers/copilot');
 
 const HOME = os.homedir();
 
 // ─── KNOWN AGENT STORAGE ROOTS ────────────────────────────────────────────────
 const AGENT_ROOTS = {
   Antigravity: path.join(HOME, '.gemini', 'antigravity-ide', 'brain'),
-  Codex:       path.join(HOME, '.codex', 'sessions'),
+  Codex: path.join(HOME, '.codex', 'sessions'),
   'Claude Code': path.join(HOME, '.claude', 'projects'),
+  'GitHub Copilot': path.join(HOME, '.copilot', 'session-state'),
 };
 
 // ─── RELAY DIRECTORY HELPERS ──────────────────────────────────────────────────
@@ -59,7 +61,7 @@ function detectCodexCli() {
   try {
     const result = spawnSync('codex', ['--version'], { shell: true, timeout: 3000, encoding: 'utf-8' });
     if (result.status === 0) return 'codex';
-  } catch (_) {}
+  } catch (_) { }
 
   // 2. Check common npm global paths
   const npmGlobalBins = [
@@ -76,7 +78,7 @@ function detectCodexCli() {
   try {
     const r = spawnSync('npx', ['codex', '--version'], { shell: true, timeout: 5000, encoding: 'utf-8' });
     if (r.status === 0) return 'npx codex';
-  } catch (_) {}
+  } catch (_) { }
 
   return null; // Extension-only mode
 }
@@ -141,6 +143,12 @@ function sendHandshake(workspacePath, agent) {
     mode = 'cli';
     console.log(`[Claude Code] stdout: ${result.stdout}`);
     if (result.error) console.error(`[Claude Code] spawn error: ${result.error.message}`);
+
+  } else if (agent === 'GitHub Copilot') {
+    fs.writeFileSync(path.join(getRelayDir(workspacePath), '.handshake_copilot'), token);
+    mode = 'workspace-cwd-match';
+    console.log(`[GitHub Copilot] Beacon written. Token: ${token}`);
+    config.agents[agent].copilotMode = mode;
   }
 
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
@@ -175,7 +183,7 @@ function discoverByToken(agent, token) {
   for (const file of files) {
     try {
       if (fs.readFileSync(file, 'utf-8').includes(token)) return file;
-    } catch (_) {}
+    } catch (_) { }
   }
   return null;
 }
@@ -200,7 +208,7 @@ function discoverCodexByWorkspaceCwd(workspacePath) {
           matched.push(file);
         }
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   if (matched.length > 0) {
@@ -211,6 +219,40 @@ function discoverCodexByWorkspaceCwd(workspacePath) {
 
   // Last resort: just grab the most recent session
   console.warn('[Codex] No cwd match found. Falling back to most recent session file.');
+  return mostRecentFile(files);
+}
+
+// Strategy 4 (GitHub Copilot): match session.start context cwd to registered workspace
+function discoverCopilotByWorkspaceCwd(workspacePath) {
+  const root = AGENT_ROOTS['GitHub Copilot'];
+  if (!fs.existsSync(root)) return null;
+
+  const normalize = (p) => String(p || '').toLowerCase().replace(/\\/g, '/').replace(/\/$/, '');
+  const targetCwd = normalize(workspacePath);
+
+  const files = findJsonlFiles(root);
+  const matched = [];
+
+  for (const file of files) {
+    try {
+      const firstLine = fs.readFileSync(file, 'utf-8').split('\n')[0];
+      const meta = JSON.parse(firstLine);
+      if (meta.type === 'session.start') {
+        const cwd = meta.data?.context?.cwd || meta.data?.context?.workspaceFolder?.folderPath;
+        if (normalize(cwd) === targetCwd) {
+          matched.push(file);
+        }
+      }
+    } catch (_) { }
+  }
+
+  if (matched.length > 0) {
+    const best = mostRecentFile(matched);
+    console.log(`[GitHub Copilot] Found ${matched.length} session(s) matching workspace cwd. Using: ${best}`);
+    return best;
+  }
+
+  console.warn('[GitHub Copilot] No cwd match found. Falling back to most recent session file.');
   return mostRecentFile(files);
 }
 
@@ -258,12 +300,18 @@ function connectAgent(workspacePath, agent) {
   } else if (agent === 'Claude Code') {
     // CLI was used — grep for token
     transcriptPath = discoverByToken('Claude Code', token);
+  } else if (agent === 'GitHub Copilot') {
+    transcriptPath = discoverCopilotByWorkspaceCwd(workspacePath);
   }
 
   if (!transcriptPath) {
     throw new Error(
       `Could not discover ${agent} transcript. ` +
-      (agent === 'Codex' ? 'Make sure Codex is open in this workspace in VS Code.' : 'The CLI may not have written a session yet.')
+      (agent === 'Codex'
+        ? 'Make sure Codex is open in this workspace in VS Code.'
+        : agent === 'GitHub Copilot'
+          ? 'Make sure Copilot is open in this workspace in VS Code.'
+          : 'The CLI may not have written a session yet.')
     );
   }
 
@@ -273,6 +321,7 @@ function connectAgent(workspacePath, agent) {
     if (agent === 'Antigravity') events = parseAntigravity(transcriptPath);
     else if (agent === 'Codex') events = parseCodex(transcriptPath);
     else if (agent === 'Claude Code') events = parseClaude(transcriptPath);
+    else if (agent === 'GitHub Copilot') events = parseCopilot(transcriptPath);
   } catch (err) {
     console.error(`[${agent}] Parse error:`, err.message);
   }
@@ -284,6 +333,7 @@ function connectAgent(workspacePath, agent) {
     connectedAt: new Date().toISOString(),
     pendingToken: null,
     codexMode: agentConfig.codexMode || null,
+    copilotMode: agentConfig.copilotMode || null,
   };
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
@@ -327,8 +377,9 @@ function syncWorkspace(workspacePath) {
     try {
       let events = [];
       if (agent === 'Antigravity') events = parseAntigravity(transcriptPath);
-      else if (agent === 'Codex')   events = parseCodex(transcriptPath);
+      else if (agent === 'Codex') events = parseCodex(transcriptPath);
       else if (agent === 'Claude Code') events = parseClaude(transcriptPath);
+      else if (agent === 'GitHub Copilot') events = parseCopilot(transcriptPath);
 
       if (!memory.agents) memory.agents = {};
       memory.agents[agent] = {
