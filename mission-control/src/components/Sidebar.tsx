@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { AGENTS } from '@/lib/relay';
+import { AGENTS, filterTimeline } from '@/lib/relay';
 import { useRelay, AgentStatus } from '@/lib/RelayContext';
 import styles from './Sidebar.module.css';
 
@@ -44,7 +44,7 @@ export default function Sidebar() {
     }
   };
 
-  const recent = (memory?.timeline || []).slice(-8).reverse();
+  const recent = filterTimeline(memory?.timeline || []).slice(-8).reverse();
 
   return (
     <aside className={styles.sidebar}>

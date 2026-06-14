@@ -34,7 +34,7 @@
 }
 
 .controlRoomArea {
-  width: 400px;
+  width: 440px;
   flex-shrink: 0;
   background-color: var(--color-surface-2);
   border-left: 1px solid var(--color-border);

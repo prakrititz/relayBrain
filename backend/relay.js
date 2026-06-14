@@ -10,6 +10,9 @@ const { parseCursor, discoverCursorTranscriptDir } = require('./parsers/cursor')
 const { discoverWorkspaceStorageDir } = require('./lib/vscodeWorkspace');
 const { readVscdbJson } = require('./lib/vscdb');
 const { buildGlobalTimeline } = require('./lib/timeline');
+const { scaffoldIrFiles, writeRelayContext, writeCompileBrief } = require('./lib/relayContext');
+const { compileIrSync } = require('./lib/relayCompileIr');
+const { installRelayWorkspace, isRelayInstalled, writeAgentBootstrap } = require('./lib/relayInstall');
 
 const HOME = os.homedir();
 
@@ -41,6 +44,16 @@ function getMemoryPath(workspacePath) {
   return path.join(getRelayDir(workspacePath), 'memory.json');
 }
 
+function safeReadJson(filePath, fallback) {
+  try {
+    const raw = fs.readFileSync(filePath, 'utf-8').trim();
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  } catch (_) {
+    return fallback;
+  }
+}
+
 function registerWorkspace(workspacePath) {
   const relayDir = getRelayDir(workspacePath);
   if (!fs.existsSync(relayDir)) fs.mkdirSync(relayDir, { recursive: true });
@@ -50,6 +63,8 @@ function registerWorkspace(workspacePath) {
     fs.writeFileSync(configPath, JSON.stringify({
       workspace: workspacePath,
       registeredAt: new Date().toISOString(),
+      autoUpdate: true,
+      autoAgentUpdate: true,
       agents: {},
     }, null, 2));
   }
@@ -63,6 +78,10 @@ function registerWorkspace(workspacePath) {
       timeline: [],
     }, null, 2));
   }
+
+  installRelayWorkspace(workspacePath, { packageRoot: path.join(__dirname, '..') });
+  require('./lib/relayMeta').scaffoldMissionMeta(workspacePath);
+  autoConnectAgents(workspacePath);
 
   return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 }
@@ -453,6 +472,77 @@ function parseAgentData(agent, transcriptPath, workspacePath) {
   return { events: [], artifacts: [], tasks: [], messages: [] };
 }
 
+const AUTO_AGENTS = ['Cursor', 'Claude Code', 'GitHub Copilot', 'Codex', 'Antigravity'];
+
+function discoverAgentTranscript(agent, workspacePath) {
+  if (agent === 'Antigravity') return discoverAntigravityByWorkspace(workspacePath);
+  if (agent === 'Codex') return discoverCodexByWorkspaceCwd(workspacePath);
+  if (agent === 'Claude Code') return discoverClaudeByWorkspaceCwd(workspacePath);
+  if (agent === 'GitHub Copilot') return discoverCopilotByWorkspaceCwd(workspacePath);
+  if (agent === 'Cursor') return discoverCursorByWorkspace(workspacePath);
+  return null;
+}
+
+function connectAgentAuto(workspacePath, agent) {
+  const transcriptPath = discoverAgentTranscript(agent, workspacePath);
+  if (!transcriptPath || !fs.existsSync(transcriptPath)) {
+    return { agent, connected: false };
+  }
+
+  const configPath = getConfigPath(workspacePath);
+  const config = safeReadJson(configPath, { agents: {} });
+  if (!config.agents) config.agents = {};
+
+  let parsed = { events: [], artifacts: [], tasks: [], messages: [] };
+  try {
+    parsed = normalizeParseResult(parseAgentData(agent, transcriptPath, workspacePath));
+  } catch (err) {
+    console.warn(`[AutoConnect] ${agent} parse error: ${err.message}`);
+  }
+
+  config.agents[agent] = {
+    status: 'connected',
+    transcriptPath,
+    connectedAt: new Date().toISOString(),
+    autoConnected: true,
+  };
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+  const memoryPath = getMemoryPath(workspacePath);
+  const memory = fs.existsSync(memoryPath)
+    ? safeReadJson(memoryPath, { workspace: workspacePath, agents: {}, timeline: [] })
+    : { workspace: workspacePath, agents: {}, timeline: [] };
+  if (!memory.agents) memory.agents = {};
+  memory.agents[agent] = {
+    status: 'connected',
+    transcriptPath,
+    eventCount: parsed.events.length,
+    events: parsed.events.slice(-100),
+    artifacts: parsed.artifacts,
+    tasks: parsed.tasks.slice(-50),
+    messages: parsed.messages.slice(-50),
+  };
+  memory.timeline = buildGlobalTimeline(memory.agents);
+  fs.writeFileSync(memoryPath, JSON.stringify(memory, null, 2));
+
+  console.log(`[AutoConnect] ${agent} → ${transcriptPath}`);
+  return { agent, connected: true, transcriptPath, eventCount: parsed.events.length };
+}
+
+function autoConnectAgents(workspacePath) {
+  const configPath = getConfigPath(workspacePath);
+  if (!fs.existsSync(configPath)) return [];
+
+  let config = safeReadJson(configPath, null);
+  if (!config) return [];
+  if (config.autoUpdate === undefined) {
+    config.autoUpdate = true;
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  }
+
+  return AUTO_AGENTS.map(agent => connectAgentAuto(workspacePath, agent));
+}
+
 function connectAgent(workspacePath, agent) {
   const configPath = getConfigPath(workspacePath);
   const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
@@ -529,6 +619,7 @@ function connectAgent(workspacePath, agent) {
     messages: parsed.messages.slice(-50),
   };
   memory.timeline = buildGlobalTimeline(memory.agents);
+  writeRelayContext(workspacePath);
   fs.writeFileSync(memoryPath, JSON.stringify(memory, null, 2));
 
   return {
@@ -588,7 +679,46 @@ function syncWorkspace(workspacePath) {
   };
 }
 
+async function refreshWorkspace(workspacePath, options = {}) {
+  const syncResult = syncWorkspace(workspacePath);
+  if (!options.skipBrief) {
+    writeCompileBrief(workspacePath, options);
+  }
+  const contextResult = writeRelayContext(workspacePath, options);
+  return { sync: syncResult, context: contextResult };
+}
+
 const activeWatchers = new Map();
+const refreshInFlight = new Map();
+
+function scheduleAutoSync(workspacePath, label) {
+  if (refreshInFlight.has(workspacePath)) return;
+
+  const configPath = getConfigPath(workspacePath);
+  if (!fs.existsSync(configPath)) return;
+
+  let config = {};
+  try {
+    config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  } catch (_) {
+    return;
+  }
+  if (config.autoUpdate === false) return;
+
+  refreshInFlight.set(workspacePath, true);
+  console.log(`[Watcher] ${label} changed — syncing...`);
+
+  autoConnectAgents(workspacePath);
+  try {
+    syncWorkspace(workspacePath);
+    writeCompileBrief(workspacePath);
+    console.log(`[Watcher] ✓ synced (agent hooks update IR on stop)`);
+  } catch (err) {
+    console.error(`[Watcher] sync error: ${err.message}`);
+  } finally {
+    refreshInFlight.delete(workspacePath);
+  }
+}
 
 function watchPath(watchTarget, label, workspacePath, watchers) {
   if (!watchTarget || !fs.existsSync(watchTarget)) return;
@@ -599,11 +729,8 @@ function watchPath(watchTarget, label, workspacePath, watchers) {
   const watcher = fs.watch(watchTarget, { recursive: watchRecursive }, () => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
-      console.log(`[Watcher] ${label} changed — auto-syncing...`);
-      try { syncWorkspace(workspacePath); } catch (err) {
-        console.error(`[Watcher] sync error: ${err.message}`);
-      }
-    }, 500);
+      scheduleAutoSync(workspacePath, label);
+    }, 2000);
   });
 
   watchers.push(watcher);
@@ -615,8 +742,10 @@ function startWatcher(workspacePath) {
     activeWatchers.get(workspacePath).forEach(w => w.close());
   }
 
+  autoConnectAgents(workspacePath);
+
   const configPath = getConfigPath(workspacePath);
-  if (!fs.existsSync(configPath)) return;
+  if (!fs.existsSync(configPath)) return 0;
 
   const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
   const watchers = [];
@@ -637,6 +766,19 @@ function startWatcher(workspacePath) {
   return watchers.length;
 }
 
+async function startRelayWatch(workspacePath) {
+  const count = startWatcher(workspacePath);
+  syncWorkspace(workspacePath);
+  writeCompileBrief(workspacePath);
+  return { watcherCount: count };
+}
+
+function stopWatcher(workspacePath) {
+  if (!activeWatchers.has(workspacePath)) return;
+  activeWatchers.get(workspacePath).forEach(w => w.close());
+  activeWatchers.delete(workspacePath);
+}
+
 function getMemory(workspacePath) {
   const memoryPath = getMemoryPath(workspacePath);
   if (!fs.existsSync(memoryPath)) {
@@ -645,4 +787,49 @@ function getMemory(workspacePath) {
   return JSON.parse(fs.readFileSync(memoryPath, 'utf-8'));
 }
 
-module.exports = { registerWorkspace, sendHandshake, connectAgent, syncWorkspace, startWatcher, getMemory };
+function getRelayContext(workspacePath, options = {}) {
+  const relayDir = getRelayDir(workspacePath);
+  if (!fs.existsSync(relayDir)) {
+    throw new Error('Workspace not registered. Call /api/register first.');
+  }
+  return writeRelayContext(workspacePath, options);
+}
+
+function getCompileBrief(workspacePath, options = {}) {
+  const relayDir = getRelayDir(workspacePath);
+  if (!fs.existsSync(relayDir)) {
+    throw new Error('Workspace not registered. Call /api/register first.');
+  }
+  return writeCompileBrief(workspacePath, options);
+}
+
+async function compileIr(workspacePath, options = {}) {
+  const relayDir = getRelayDir(workspacePath);
+  if (!fs.existsSync(relayDir)) {
+    throw new Error('Workspace not registered. Call /api/register first.');
+  }
+  if (!options.skipBrief) {
+    writeCompileBrief(workspacePath, options);
+  }
+  return compileIrSync(workspacePath, options);
+}
+
+module.exports = {
+  registerWorkspace,
+  sendHandshake,
+  connectAgent,
+  connectAgentAuto,
+  autoConnectAgents,
+  syncWorkspace,
+  refreshWorkspace,
+  startWatcher,
+  startRelayWatch,
+  stopWatcher,
+  getMemory,
+  getRelayContext,
+  getCompileBrief,
+  compileIr,
+  isRelayInstalled,
+  installRelayWorkspace,
+  writeAgentBootstrap,
+};

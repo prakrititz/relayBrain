@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
-import AuthProvider from "@/components/SessionProvider";
 import { RelayProvider } from "@/lib/RelayContext";
 import "./globals.css";
 
@@ -23,11 +22,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${jetbrainsMono.variable}`}>
-        <AuthProvider>
-          <RelayProvider>
-            {children}
-          </RelayProvider>
-        </AuthProvider>
+        <RelayProvider>
+          {children}
+        </RelayProvider>
       </body>
     </html>
   );

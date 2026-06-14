@@ -7,11 +7,11 @@ import styles from './GlobalHeader.module.css';
 
 export default function GlobalHeader() {
   const router = useRouter();
-  const { workspaces, activeWorkspace, selectWorkspace, agentStates, relayOnline } = useRelay();
+  const { workspaces, activeWorkspace, selectWorkspace, agentStates, relayOnline, dashboard, memory, syncing, refresh } = useRelay();
   const [open, setOpen] = useState(false);
 
   const connectedCount = agentStates.filter((a) => a.status === 'connected').length;
-  const eventCount = agentStates.reduce((sum, a) => sum + (a.eventCount || 0), 0);
+  const eventCount = dashboard?.stats?.totalEvents ?? memory?.timeline?.length ?? 0;
 
   return (
     <header className={styles.header}>
@@ -27,49 +27,25 @@ export default function GlobalHeader() {
             <span className={styles.arrow}>▼</span>
           </div>
           {open && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                marginTop: 6,
-                minWidth: 220,
-                background: 'var(--color-surface-2)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 6,
-                zIndex: 50,
-                overflow: 'hidden',
-              }}
-            >
+            <div className={styles.dropdownMenu}>
               {workspaces.map((w) => (
                 <div
                   key={w.id}
+                  className={styles.dropdownItem}
+                  data-active={w.active || undefined}
                   onClick={() => {
                     selectWorkspace(w.id);
                     setOpen(false);
-                  }}
-                  style={{
-                    padding: '8px 12px',
-                    fontSize: 13,
-                    cursor: 'pointer',
-                    color: w.active ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    background: w.active ? 'rgba(255,255,255,0.06)' : 'transparent',
                   }}
                 >
                   {w.full}
                 </div>
               ))}
               <div
+                className={styles.dropdownAdd}
                 onClick={() => {
                   setOpen(false);
                   router.push('/onboarding');
-                }}
-                style={{
-                  padding: '8px 12px',
-                  fontSize: 13,
-                  cursor: 'pointer',
-                  color: 'var(--text-secondary)',
-                  borderTop: '1px solid var(--color-border)',
                 }}
               >
                 + Add workspace
@@ -88,16 +64,16 @@ export default function GlobalHeader() {
             Agents: <strong className="mono">{connectedCount}</strong> connected
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-secondary)' }}>
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: relayOnline ? 'var(--color-success)' : 'var(--text-muted)',
-              boxShadow: relayOnline ? '0 0 6px var(--color-success)' : 'none',
-            }}
-          />
+        <button
+          type="button"
+          className={styles.syncBtn}
+          disabled={syncing || !activeWorkspace}
+          onClick={() => refresh({ full: true })}
+        >
+          {syncing ? 'Syncing…' : 'Sync'}
+        </button>
+        <div className={styles.statusPill}>
+          <span className={styles.statusDot} data-live={relayOnline || undefined} />
           {relayOnline ? 'Relay online' : 'Relay offline'}
         </div>
       </div>

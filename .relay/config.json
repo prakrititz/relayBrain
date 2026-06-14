@@ -1,0 +1,38 @@
+{
+  "workspace": "C:\\Users\\unnat\\Documents\\GitHub\\OrbitOS",
+  "registeredAt": "2026-06-14T15:28:28.974Z",
+  "autoUpdate": true,
+  "autoAgentUpdate": true,
+  "agents": {
+    "Cursor": {
+      "status": "connected",
+      "transcriptPath": "C:\\Users\\unnat\\.cursor\\projects\\c-Users-unnat-Documents-GitHub-OrbitOS\\agent-transcripts",
+      "connectedAt": "2026-06-14T15:28:29.098Z",
+      "autoConnected": true
+    },
+    "Claude Code": {
+      "status": "connected",
+      "transcriptPath": "C:\\Users\\unnat\\.claude\\projects\\c--Users-unnat-Desktop-portfolio\\5a3b7070-f09f-448d-991c-c15f72253277.jsonl",
+      "connectedAt": "2026-06-14T15:28:29.124Z",
+      "autoConnected": true
+    },
+    "GitHub Copilot": {
+      "status": "connected",
+      "transcriptPath": "C:\\Users\\unnat\\AppData\\Roaming\\Code\\User\\workspaceStorage\\cfe1b3cb8edb50f028f11572c1ff26a6\\chatSessions\\a20e7734-216c-4dbb-9a4f-41d0e5b01550.jsonl",
+      "connectedAt": "2026-06-14T15:28:34.247Z",
+      "autoConnected": true
+    },
+    "Codex": {
+      "status": "connected",
+      "transcriptPath": "C:\\Users\\unnat\\.codex\\sessions\\2026\\06\\14\\rollout-2026-06-14T11-11-10-019ec4a5-f16d-73a1-ab78-8e96232e82ca.jsonl",
+      "connectedAt": "2026-06-14T15:28:34.330Z",
+      "autoConnected": true
+    },
+    "Antigravity": {
+      "status": "connected",
+      "transcriptPath": "C:\\Users\\unnat\\.gemini\\antigravity-ide\\brain\\aa6f638c-4f01-4128-a9e4-a322da57eb04\\.system_generated\\logs\\transcript.jsonl",
+      "connectedAt": "2026-06-14T15:28:34.556Z",
+      "autoConnected": true
+    }
+  }
+}

@@ -1,0 +1,30 @@
+# Dev / planning artifacts
+example_*.json
+state_report*.json
+after_storing.md
+stages.md
+agent_storage_map.md
+Workflow.md
+nextSteps.md
+copilot.md
+cursor.md
+codex_cli.md
+antigravity.md
+
+# Marketing site (not part of npm package)
+landing/
+
+# Local editor state
+.cursor/
+
+# Mission Control build artifacts (deps installed via postinstall)
+mission-control/.next/
+mission-control/node_modules/
+mission-control/.env
+
+# Backend dev deps
+backend/node_modules/
+
+# Git
+.git/
+.gitignore

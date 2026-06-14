@@ -1,8 +1,7 @@
 'use client';
 
 // Browses the local filesystem via /api/fs and lets the user pick a folder's
-// absolute path. Used by both Add-Workspace methods (GitHub "I have it locally"
-// and "Upload Project Directory").
+// absolute path for the Add Workspace flow.
 
 import React, { useCallback, useEffect, useState } from 'react';
 

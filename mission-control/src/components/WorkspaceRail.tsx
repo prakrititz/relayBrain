@@ -2,14 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
 import { useRelay } from '@/lib/RelayContext';
 import styles from './WorkspaceRail.module.css';
 
 export default function WorkspaceRail() {
   const [isExpanded, setIsExpanded] = useState(false);
   const router = useRouter();
-  const { data: session } = useSession();
   const { workspaces, selectWorkspace } = useRelay();
 
   useEffect(() => {
@@ -23,8 +21,6 @@ export default function WorkspaceRail() {
       return next;
     });
   };
-
-  const userInitial = (session?.user?.name || session?.user?.email || '?').charAt(0).toUpperCase();
 
   return (
     <nav className={`${styles.rail} ${isExpanded ? styles.expanded : ''}`}>
@@ -53,13 +49,6 @@ export default function WorkspaceRail() {
         <div className={styles.itemWrapper} onClick={() => router.push('/onboarding')}>
           <div className={styles.addWorkspace}>+</div>
           {isExpanded && <span className={styles.itemText}>Add Workspace</span>}
-        </div>
-      </div>
-
-      <div className={styles.bottomSection}>
-        <div className={styles.itemWrapper} onClick={() => signOut({ callbackUrl: '/login' })}>
-          <div className={styles.profileAvatar}>{userInitial}</div>
-          {isExpanded && <span className={styles.itemText}>Sign out</span>}
         </div>
       </div>
     </nav>

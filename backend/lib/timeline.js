@@ -22,6 +22,26 @@ const KIND_ORDER = {
   checkpoint: 3,
 };
 
+const REDACTED_RE = /\[REDACTED\]/i;
+
+function isRedactedContent(text) {
+  if (text == null) return false;
+  const s = String(text).trim();
+  if (!s) return false;
+  if (s === '[REDACTED]') return true;
+  if (/^\[REDACTED\]\s*$/.test(s)) return true;
+  const stripped = s.replace(/\[REDACTED\]/gi, '').trim();
+  if (!stripped && REDACTED_RE.test(s)) return true;
+  return false;
+}
+
+function shouldSkipEvent(event) {
+  if (!event) return true;
+  if (event.kind === 'message' && isRedactedContent(event.content)) return true;
+  if (event.kind === 'artifact' && isRedactedContent(event.content)) return true;
+  return false;
+}
+
 function compareEvents(a, b) {
   const ta = Date.parse(a.ts || '') || 0;
   const tb = Date.parse(b.ts || '') || 0;
@@ -44,6 +64,7 @@ function buildGlobalTimeline(agentsMemory = {}) {
     if (!agentData || agentData.status !== 'connected') continue;
 
     for (const event of agentData.events || []) {
+      if (shouldSkipEvent(event)) continue;
       merged.push({
         ...event,
         source: event.source || agentName,
@@ -74,5 +95,7 @@ module.exports = {
   compareEvents,
   buildGlobalTimeline,
   makeUnifiedDiff,
+  isRedactedContent,
+  shouldSkipEvent,
   KIND_ORDER,
 };

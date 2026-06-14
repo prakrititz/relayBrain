@@ -1,14 +1,6 @@
-// Server-side local directory browser for the "Upload Project Directory" flow.
-//
-// Browsers cannot read a folder's absolute path (security), so the picker asks
-// the Next server — which runs on the same machine as the relay companion in
-// local/desktop use — to enumerate the real filesystem and hand back absolute
-// paths. NOTE: in a pure-cloud deployment this would browse the SERVER's disk;
-// that responsibility moves into the local companion later (see plan Stage 2).
+// Server-side local directory browser for the "Add Workspace" flow.
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import fs from 'fs';
 import path from 'path';
 
@@ -32,12 +24,8 @@ function listDrives(): Entry[] {
 }
 
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
   const dir = new URL(request.url).searchParams.get('path');
 
-  // Top level: Windows drive letters, or the root on POSIX.
   if (!dir) {
     const entries = process.platform === 'win32' ? listDrives() : [{ name: '/', path: '/', isDir: true }];
     return NextResponse.json({ path: null, parent: null, entries });

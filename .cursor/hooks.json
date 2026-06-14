@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "hooks": {
+    "stop": [
+      {
+        "command": ".relay/hooks/relay-cursor-stop.js",
+        "loop_limit": 1
+      }
+    ]
+  }
+}

@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { normalizeTs, makeUnifiedDiff } = require('../lib/timeline');
+const { normalizeTs, makeUnifiedDiff, isRedactedContent } = require('../lib/timeline');
 const { scanHistoryForWorkspace, getCursorHistoryRoots } = require('../lib/vscodeHistory');
 
 const SOURCE = 'Cursor';
@@ -137,7 +137,7 @@ function parseCursorTranscriptFile(transcriptPath, baseTs) {
 
       if (step.role === 'user') {
         const text = extractUserText(step.message?.content);
-        if (text) {
+        if (text && !isRedactedContent(text)) {
           events.push({
             ts,
             kind: 'message',
@@ -150,7 +150,7 @@ function parseCursorTranscriptFile(transcriptPath, baseTs) {
         }
       } else if (step.role === 'assistant') {
         const text = extractAssistantText(step.message?.content);
-        if (text) {
+        if (text && !isRedactedContent(text)) {
           events.push({
             ts,
             kind: 'message',

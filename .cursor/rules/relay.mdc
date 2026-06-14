@@ -1,0 +1,29 @@
+---
+description: Relay cross-agent memory — read bootstrap every session
+alwaysApply: true
+---
+
+At session start in this workspace:
+
+1. If `.relay/AGENT_BOOTSTRAP.md` is missing, run `npx relay-os init` in the project root (do not ask the user to edit CLAUDE.md or copilot-instructions manually).
+2. Read `.relay/AGENT_BOOTSTRAP.md` and follow it.
+3. For handoff context, read `.relay/relay_context.md` — not `memory.json` or agent JSONL files.
+4. **Stop hook:** syncs + writes `compile_brief.md`, then **you** update IR markdown and run `relay context .` (all agents have hooks via `relay init`).
+
+5. Keep `relay watch .` running for background sync across agents.
+
+## Relay pseudo-commands (user chat)
+
+These are **not** built-in slash commands in Cursor, Claude, Copilot, etc. They are a **project convention** — phrases the user types so agents recognize Relay intent. `relay init` patches this block into `CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`, `.cursorrules`, and `.relay/AGENT_BOOTSTRAP.md`.
+
+When the user sends any of these phrases (with or without a leading `/`), treat them as Relay instructions — not casual chat:
+
+| User says | You do |
+|-----------|--------|
+| `/relay update` or `relay update` | `relay sync .` → `relay compile .` → read `.relay/compile_brief.md` → update `.relay/project.md`, `current_task.md`, `decisions.md`, `failures.md` → `relay context .` → confirm "Relay updated." |
+| `/relay context` or `relay context` | Read `.relay/relay_context.md` (run `relay context .` first if stale). Summarize handoff briefly. |
+| `/relay init` or `relay init` | Run `npx relay-os init` in project root if `.relay/` missing; else confirm already installed. |
+
+Use `npx relay-os` if `relay` is not on PATH. Do not ask the user to edit agent config files manually.
+
+Use the relay-sync skill when the user says relay update, /relay update, relay context, or relay handoff.

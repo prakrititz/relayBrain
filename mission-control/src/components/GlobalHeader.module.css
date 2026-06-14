@@ -88,6 +88,75 @@
   color: var(--text-primary);
 }
 
+.dropdownMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  min-width: 220px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  z-index: 50;
+  overflow: hidden;
+}
+
+.dropdownItem {
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.dropdownItem[data-active] {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.dropdownAdd {
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--color-border);
+}
+
+.syncBtn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.syncBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.statusPill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.statusDot[data-live] {
+  background: var(--color-success);
+  box-shadow: 0 0 6px var(--color-success);
+}
+
 .settingsBtn {
   background: none;
   border: none;

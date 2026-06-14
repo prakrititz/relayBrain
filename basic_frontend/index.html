@@ -1,1201 +1,197 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Relay — Agent Memory Hub</title>
+  <title>Relay — Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
-    rel="stylesheet" />
-  <style>
-    :root {
-      --bg: #0a0b0d;
-      --surface: #111318;
-      --surface-2: #181c25;
-      --border: #1f2535;
-      --accent: #6c63ff;
-      --accent-dim: rgba(108, 99, 255, 0.15);
-      --success: #22d07a;
-      --success-dim: rgba(34, 208, 122, 0.12);
-      --warning: #f5a623;
-      --warning-dim: rgba(245, 166, 35, 0.12);
-      --error: #ff4d6d;
-      --error-dim: rgba(255, 77, 109, 0.12);
-      --text: #e8eaf6;
-      --text-2: #8892b0;
-      --text-3: #4a5568;
-      --mono: 'JetBrains Mono', monospace;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Inter', sans-serif;
-      min-height: 100vh;
-      display: grid;
-      grid-template-rows: 56px 1fr;
-      grid-template-columns: 340px 1fr;
-    }
-
-    /* ── HEADER ── */
-    header {
-      grid-column: 1 / -1;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 0 24px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .logo {
-      font-size: 18px;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--accent), #a78bfa);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .logo-sub {
-      font-size: 12px;
-      color: var(--text-2);
-      font-weight: 400;
-      margin-left: 4px;
-    }
-
-    .header-status {
-      margin-left: auto;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      color: var(--text-2);
-    }
-
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--text-3);
-    }
-
-    .dot.live {
-      background: var(--success);
-      box-shadow: 0 0 6px var(--success);
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-
-      0%,
-      100% {
-        opacity: 1;
-      }
-
-      50% {
-        opacity: 0.4;
-      }
-    }
-
-    /* ── LEFT PANEL ── */
-    .left-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      overflow-y: auto;
-    }
-
-    .section {
-      padding: 20px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .section-label {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      color: var(--text-3);
-      text-transform: uppercase;
-      margin-bottom: 14px;
-    }
-
-    /* ── WORKSPACE REGISTER ── */
-    .ws-input {
-      width: 100%;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 10px 12px;
-      font-size: 12px;
-      color: var(--text);
-      font-family: var(--mono);
-      outline: none;
-      transition: border-color 0.2s;
-      margin-bottom: 10px;
-    }
-
-    .ws-input:focus {
-      border-color: var(--accent);
-    }
-
-    .btn {
-      width: 100%;
-      padding: 10px 16px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: #7c75ff;
-    }
-
-    .btn-primary:disabled {
-      background: var(--border);
-      cursor: not-allowed;
-      color: var(--text-3);
-    }
-
-    .btn-outline {
-      background: transparent;
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-
-    .btn-outline:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    .btn-outline:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    /* ── WORKSPACE BADGE ── */
-    .ws-badge {
-      background: var(--success-dim);
-      border: 1px solid var(--success);
-      border-radius: 6px;
-      padding: 8px 12px;
-      font-size: 11px;
-      font-family: var(--mono);
-      color: var(--success);
-      word-break: break-all;
-    }
-
-    /* ── AGENT CARDS ── */
-    .agent-card {
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 14px;
-      margin-bottom: 10px;
-      transition: border-color 0.2s;
-    }
-
-    .agent-card:hover {
-      border-color: var(--accent);
-    }
-
-    .agent-card.connected {
-      border-color: var(--success);
-      background: var(--success-dim);
-    }
-
-    .agent-card.handshaking {
-      border-color: var(--warning);
-      background: var(--warning-dim);
-    }
-
-    .agent-card.error {
-      border-color: var(--error);
-      background: var(--error-dim);
-    }
-
-    .agent-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-
-    .agent-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      flex-shrink: 0;
-    }
-
-    .agent-icon.antigravity {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-    }
-
-    .agent-icon.codex {
-      background: linear-gradient(135deg, #11998e, #38ef7d);
-    }
-
-    .agent-icon.claude {
-      background: linear-gradient(135deg, #f7971e, #ffd200);
-    }
-
-    .agent-icon.copilot {
-      background: linear-gradient(135deg, #1f6feb, #7c3aed);
-    }
-
-    .agent-icon.cursor {
-      background: linear-gradient(135deg, #db2777, #7c3aed);
-    }
-
-    .agent-name {
-      font-weight: 700;
-      font-size: 14px;
-    }
-
-    .agent-desc {
-      font-size: 11px;
-      color: var(--text-2);
-      margin-top: 2px;
-    }
-
-    .agent-status {
-      margin-left: auto;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      padding: 3px 8px;
-      border-radius: 20px;
-    }
-
-    .status-idle {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-3);
-    }
-
-    .status-handshaking {
-      background: var(--warning-dim);
-      color: var(--warning);
-    }
-
-    .status-connected {
-      background: var(--success-dim);
-      color: var(--success);
-    }
-
-    .status-error {
-      background: var(--error-dim);
-      color: var(--error);
-    }
-
-    .agent-path {
-      font-size: 10px;
-      font-family: var(--mono);
-      color: var(--text-2);
-      background: rgba(255, 255, 255, 0.04);
-      border-radius: 4px;
-      padding: 4px 8px;
-      margin-bottom: 8px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .agent-event-count {
-      font-size: 11px;
-      color: var(--success);
-      margin-bottom: 8px;
-    }
-
-    .agent-error {
-      font-size: 11px;
-      color: var(--error);
-      margin-bottom: 8px;
-      word-break: break-word;
-    }
-
-    .agent-btns {
-      display: flex;
-      gap: 6px;
-    }
-
-    .agent-btns .btn {
-      flex: 1;
-      font-size: 11px;
-      padding: 7px;
-    }
-
-    /* ── TOKEN DISPLAY ── */
-    .token-box {
-      background: rgba(108, 99, 255, 0.08);
-      border: 1px solid var(--accent);
-      border-radius: 6px;
-      padding: 8px 10px;
-      margin-bottom: 8px;
-      font-family: var(--mono);
-      font-size: 10px;
-      color: var(--accent);
-      word-break: break-all;
-    }
-
-    /* ── RIGHT PANEL: MEMORY VIEWER ── */
-    .right-panel {
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .memory-header {
-      padding: 16px 24px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .memory-header h2 {
-      font-size: 15px;
-      font-weight: 700;
-    }
-
-    .memory-header p {
-      font-size: 12px;
-      color: var(--text-2);
-    }
-
-    .memory-header .btn {
-      width: auto;
-      padding: 8px 16px;
-      font-size: 12px;
-      margin-left: auto;
-    }
-
-    .memory-filters {
-      display: flex;
-      gap: 8px;
-      padding: 12px 24px;
-      border-bottom: 1px solid var(--border);
-      flex-wrap: wrap;
-    }
-
-    .filter-chip {
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text-2);
-      transition: all 0.2s;
-    }
-
-    .filter-chip.active {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: var(--accent-dim);
-    }
-
-    .filter-chip:hover {
-      border-color: var(--accent);
-    }
-
-    .timeline {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .event-card {
-      display: flex;
-      gap: 12px;
-      animation: fadeIn 0.3s ease;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(8px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .event-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .event-avatar.user {
-      background: var(--accent-dim);
-      color: var(--accent);
-    }
-
-    .event-avatar.assistant {
-      background: var(--success-dim);
-      color: var(--success);
-    }
-
-    .event-body {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .event-meta {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 5px;
-    }
-
-    .event-source {
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 4px;
-    }
-
-    .src-antigravity {
-      background: rgba(102, 126, 234, 0.2);
-      color: #a5b4fc;
-    }
-
-    .src-codex {
-      background: rgba(17, 153, 142, 0.2);
-      color: #6ee7b7;
-    }
-
-    .src-claude {
-      background: rgba(247, 151, 30, 0.2);
-      color: #fcd34d;
-    }
-
-    .src-copilot {
-      background: rgba(31, 111, 235, 0.2);
-      color: #93c5fd;
-    }
-
-    .src-cursor {
-      background: rgba(236, 72, 153, 0.2);
-      color: #f9a8d4;
-    }
-
-    .event-avatar.code_edit,
-    .event-avatar.artifact {
-      background: rgba(245, 166, 35, 0.15);
-      color: var(--warning);
-    }
-
-    .event-card.code-edit .event-content,
-    .event-card.artifact .event-content {
-      border-color: rgba(245, 166, 35, 0.35);
-    }
-
-    .edit-file {
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--warning);
-      margin-bottom: 6px;
-    }
-
-    .edit-summary {
-      font-size: 12px;
-      color: var(--text-2);
-      margin-bottom: 8px;
-    }
-
-    .edit-diff {
-      font-family: var(--mono);
-      font-size: 11px;
-      line-height: 1.5;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 10px;
-      max-height: 240px;
-      overflow: auto;
-      white-space: pre;
-      color: var(--text-2);
-    }
-
-    .edit-diff .add {
-      color: var(--success);
-    }
-
-    .edit-diff .del {
-      color: var(--error);
-    }
-
-    .event-role {
-      font-size: 11px;
-      color: var(--text-3);
-    }
-
-    .event-ts {
-      font-size: 10px;
-      color: var(--text-3);
-      margin-left: auto;
-      font-family: var(--mono);
-    }
-
-    .event-content {
-      font-size: 13px;
-      color: var(--text);
-      line-height: 1.6;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 14px;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      gap: 12px;
-      color: var(--text-3);
-    }
-
-    .empty-state .icon {
-      font-size: 48px;
-    }
-
-    .empty-state h3 {
-      font-size: 16px;
-      color: var(--text-2);
-    }
-
-    .empty-state p {
-      font-size: 13px;
-      text-align: center;
-      max-width: 300px;
-      line-height: 1.6;
-    }
-
-    .spinner {
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(255, 255, 255, 0.2);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    .toast {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 16px;
-      font-size: 13px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      z-index: 1000;
-      animation: slideIn 0.3s ease;
-      max-width: 360px;
-    }
-
-    .toast.success {
-      border-color: var(--success);
-    }
-
-    .toast.error {
-      border-color: var(--error);
-    }
-
-    @keyframes slideIn {
-      from {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-
-    ::-webkit-scrollbar {
-      width: 4px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 2px;
-    }
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
-
 <body>
-  <header>
-    <span class="logo">⬡ Relay</span>
-    <span class="logo-sub">Agent Memory Hub</span>
-
-    <div style="margin-left: 30px; display: flex; gap: 10px;">
-      <button class="filter-chip active" id="navTimelineBtn" onclick="switchView('timeline')" style="font-size: 13px; padding: 6px 16px;">Timeline</button>
-      <button class="filter-chip" id="navMemoryBtn" onclick="switchView('memory')" style="font-size: 13px; padding: 6px 16px;">Memory Dashboard</button>
-    </div>
-
-    <div class="header-status">
-      <div class="dot" id="serverDot"></div>
-      <span id="serverStatus">Connecting to backend...</span>
-    </div>
-  </header>
-
-  <!-- LEFT PANEL -->
-  <div class="left-panel">
-    <!-- Workspace -->
-    <div class="section">
-      <div class="section-label">Workspace</div>
-      <div id="wsRegistered" style="display:none">
-        <div class="ws-badge" id="wsBadge"></div>
-        <div style="margin-top:10px">
-          <button class="btn btn-outline" onclick="changeWorkspace()">Change Workspace</button>
-        </div>
-      </div>
-      <div id="wsForm">
-        <input class="ws-input" id="wsPath" type="text" placeholder="C:\Users\...\MyProject" />
-        <button class="btn btn-primary" onclick="registerWorkspace()">
-          <span>Register Workspace</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Agent Integrations -->
-    <div class="section">
-      <div class="section-label">Agent Integrations</div>
-      <div id="agentsContainer">
-        <div id="agentsLocked" style="color:var(--text-3);font-size:12px;text-align:center;padding:20px 0;">
-          Register a workspace to connect agents
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- RIGHT PANEL -->
-  <div class="right-panel">
-    <div class="memory-header">
-      <div>
-        <h2 id="viewTitle">Unified Event Timeline</h2>
-        <p id="memoryMeta">0 events · last sync: never</p>
-      </div>
-      <button class="btn btn-outline" id="syncBtn" onclick="syncMemory(true)" style="display:none">↻ Sync Memory</button>
-    </div>
-
-    <!-- TIMELINE VIEW -->
-    <div id="viewTimeline" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
-      <div class="memory-filters" id="filterBar" style="display:none">
-        <button class="filter-chip active" onclick="setFilter('all', this)">All Events</button>
-        <button class="filter-chip" onclick="setFilter('user', this)">User Only</button>
-        <button class="filter-chip" onclick="setFilter('assistant', this)">Agent Only</button>
-        <button class="filter-chip" onclick="setFilter('Antigravity', this)">Antigravity</button>
-        <button class="filter-chip" onclick="setFilter('Codex', this)">Codex</button>
-        <button class="filter-chip" onclick="setFilter('Claude Code', this)">Claude</button>
-        <button class="filter-chip" onclick="setFilter('GitHub Copilot', this)">Copilot</button>
-        <button class="filter-chip" onclick="setFilter('Cursor', this)">Cursor</button>
-        <button class="filter-chip" onclick="setFilter('code_edit', this)">Code Edits</button>
-      </div>
-      <div class="timeline" id="timeline">
-        <div class="empty-state">
-          <div class="icon">🔗</div>
-          <h3>No Memory Loaded</h3>
-          <p>Register a workspace and connect an agent to see events.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- MEMORY DASHBOARD VIEW -->
-    <div id="viewMemory" style="display:none; flex-direction:column; flex:1; overflow-y:auto; padding: 24px; gap: 24px;">
-      <div style="display:flex; gap: 32px; align-items: flex-start;">
-        
-        <!-- Artifacts Grid -->
-        <div style="flex: 2;">
-          <h3 style="margin-bottom: 16px; color: var(--text-2); font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Artifacts & Plans</h3>
-          <div id="artifactsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px;">
-            <!-- Filled by JS -->
-          </div>
-        </div>
-
-        <!-- Tasks and Messages Column -->
-        <div style="flex: 1; display:flex; flex-direction:column; gap: 32px;">
+  <div class="app" id="app">
+    <!-- HOME SCREEN -->
+    <div class="screen active" id="screenHome">
+      <header class="home-header">
+        <div class="brand">
+          <span class="brand-mark">⬡</span>
           <div>
-            <h3 style="margin-bottom: 16px; color: var(--text-2); font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Background Tasks</h3>
-            <div id="tasksList" style="display:flex; flex-direction:column; gap: 10px;">
-              <!-- Filled by JS -->
-            </div>
-          </div>
-
-          <div>
-            <h3 style="margin-bottom: 16px; color: var(--text-2); font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">System Messages</h3>
-            <div id="messagesList" style="display:flex; flex-direction:column; gap: 10px;">
-              <!-- Filled by JS -->
-            </div>
+            <div class="brand-title">Relay</div>
+            <div class="brand-sub">Project memory dashboard</div>
           </div>
         </div>
+        <div class="home-actions">
+          <div class="status-pill">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Connecting…</span>
+          </div>
+          <button class="btn btn-primary" id="addProjectBtn">+ Add project</button>
+        </div>
+      </header>
 
-      </div>
+      <main class="home-main">
+        <div class="home-intro">
+          <h1>Your projects</h1>
+          <p>Each project has its own API key for agents and MCP. Run <code>relay init</code> in a folder to register one automatically.</p>
+        </div>
+        <div class="project-grid" id="projectGrid"></div>
+      </main>
     </div>
-  </div>
 
-  <script>
-    const API = 'http://localhost:3001';
-    let workspacePath = localStorage.getItem('relay_workspace') || '';
-    let allEvents = [];
-    let allArtifacts = [];
-    let allTasks = [];
-    let allMessages = [];
-    let activeFilter = 'all';
-    let currentView = 'timeline';
+    <!-- PROJECT SCREEN -->
+    <div class="screen" id="screenProject">
+      <header class="topbar">
+        <button class="btn btn-ghost btn-sm" id="backBtn">← Projects</button>
+        <div class="project-title-wrap">
+          <h1 class="project-title" id="projectTitle">Project</h1>
+          <span class="project-path muted" id="projectPath"></span>
+        </div>
 
-    const AGENTS = [
-      { id: 'Antigravity', icon: '⬡', cls: 'antigravity', desc: 'Antigravity IDE agent' },
-      { id: 'Codex', icon: '⚡', cls: 'codex', desc: 'OpenAI Codex CLI agent' },
-      { id: 'Claude Code', icon: '◆', cls: 'claude', desc: 'Anthropic Claude Code CLI' },
-      { id: 'GitHub Copilot', icon: '◈', cls: 'copilot', desc: 'GitHub Copilot agent sessions' },
-      { id: 'Cursor', icon: '▣', cls: 'cursor', desc: 'Cursor agent transcripts + local history' },
-    ];
+        <nav class="tabs" id="mainTabs">
+          <button class="tab active" data-view="overview">Overview</button>
+          <button class="tab" data-view="activity">Activity</button>
+          <button class="tab" data-view="edits">Code edits</button>
+          <button class="tab" data-view="memory">Memory</button>
+          <button class="tab" data-view="settings">Settings</button>
+        </nav>
 
-    const agentState = {};
-    AGENTS.forEach(a => agentState[a.id] = { status: 'idle', token: null, transcriptPath: null, eventCount: 0, error: null });
+        <div class="topbar-actions">
+          <button class="btn btn-ghost" id="syncBtn">Sync</button>
+        </div>
+      </header>
 
-    // ── SERVER HEALTH CHECK ──
-    async function checkServer() {
-      try {
-        await fetch(`${API}/api/memory?workspacePath=.`);
-        document.getElementById('serverDot').classList.add('live');
-        document.getElementById('serverStatus').textContent = 'Backend connected';
-      } catch {
-        document.getElementById('serverStatus').textContent = 'Backend offline — run: node backend/server.js';
-      }
-    }
+      <aside class="sidebar">
+        <section class="panel-block">
+          <div class="panel-label">Agents</div>
+          <div class="agent-list" id="agentList"></div>
+        </section>
+        <section class="panel-block panel-grow">
+          <div class="panel-label">.relay files</div>
+          <div class="file-tree" id="fileTree"></div>
+        </section>
+      </aside>
 
-    // ── REGISTER WORKSPACE ──
-    async function registerWorkspace() {
-      const path = document.getElementById('wsPath').value.trim();
-      if (!path) return showToast('Please enter a workspace path', 'error');
-      try {
-        const res = await fetch(`${API}/api/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ workspacePath: path }),
-        });
-        const data = await res.json();
-        if (!data.ok) throw new Error(data.error);
-        workspacePath = path;
-        localStorage.setItem('relay_workspace', path);
-        onWorkspaceSet();
-        showToast('✓ Workspace registered! .relay/ folder created.', 'success');
-      } catch (err) {
-        showToast(err.message, 'error');
-      }
-    }
-
-    function changeWorkspace() {
-      workspacePath = '';
-      localStorage.removeItem('relay_workspace');
-      document.getElementById('wsRegistered').style.display = 'none';
-      document.getElementById('wsForm').style.display = 'block';
-      document.getElementById('agentsLocked').style.display = 'block';
-    }
-
-    function onWorkspaceSet() {
-      document.getElementById('wsForm').style.display = 'none';
-      document.getElementById('wsRegistered').style.display = 'block';
-      document.getElementById('wsBadge').textContent = workspacePath;
-      document.getElementById('agentsLocked').style.display = 'none';
-      document.getElementById('syncBtn').style.display = 'flex';
-      document.getElementById('filterBar').style.display = 'flex';
-      document.getElementById('memoryMeta').textContent = `Workspace: ${workspacePath.split(/[/\\]/).pop()}`;
-      renderAgents();
-      syncMemory();
-    }
-
-    // ── RENDER AGENT CARDS ──
-    function renderAgents() {
-      const container = document.getElementById('agentsContainer');
-      container.innerHTML = '';
-      AGENTS.forEach(agent => {
-        const state = agentState[agent.id];
-        const card = document.createElement('div');
-        card.className = `agent-card ${state.status === 'connected' ? 'connected' : state.status === 'error' ? 'error' : state.status === 'handshaking' ? 'handshaking' : ''}`;
-        card.id = `card-${agent.id.replace(' ', '-')}`;
-
-        const statusLabel = { idle: 'NOT CONNECTED', handshaking: 'HANDSHAKING...', connected: 'CONNECTED', error: 'ERROR' };
-        const statusCls = { idle: 'status-idle', handshaking: 'status-handshaking', connected: 'status-connected', error: 'status-error' };
-
-        card.innerHTML = `
-          <div class="agent-header">
-            <div class="agent-icon ${agent.cls}">${agent.icon}</div>
-            <div>
-              <div class="agent-name">${agent.id}</div>
-              <div class="agent-desc">${agent.desc}</div>
-            </div>
-            <span class="agent-status ${statusCls[state.status]}">${statusLabel[state.status]}</span>
-          </div>
-          ${state.status === 'handshaking' && state.token && !['GitHub Copilot', 'Cursor'].includes(agent.id) ? `<div class="token-box">${state.token}</div>` : ''}
-          ${state.status === 'handshaking' ? `<div style="font-size:11px;color:var(--warning);margin-bottom:8px;">${agent.id === 'GitHub Copilot' || agent.id === 'Cursor' ? 'Matching workspace sessions automatically…' : `Sending token to ${agent.id} CLI automatically…`}</div>` : ''}
-          ${state.transcriptPath ? `<div class="agent-path" title="${state.transcriptPath}">${state.transcriptPath}</div>` : ''}
-          ${state.eventCount ? `<div class="agent-event-count">✓ ${state.eventCount} events loaded</div>` : ''}
-          ${state.error ? `<div class="agent-error">✗ ${state.error}</div>` : ''}
-          <div class="agent-btns">
-            ${state.status !== 'connected'
-            ? `<button class="btn btn-primary" onclick="startHandshake('${agent.id}')" ${state.status === 'handshaking' || !workspacePath ? 'disabled' : ''}>
-                  ${state.status === 'handshaking' ? '<div class="spinner"></div> Connecting...' : '⚡ Connect'}
-                </button>`
-            : `<button class="btn btn-outline" onclick="startHandshake('${agent.id}')">↻ Reconnect</button>
-                 <button class="btn btn-primary" onclick="syncMemory()">Sync</button>`
-          }
-          </div>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    // ── HANDSHAKE + CONNECT (AUTOMATIC) ──
-    async function startHandshake(agentId) {
-      if (!workspacePath) return showToast('Register a workspace first', 'error');
-      agentState[agentId].status = 'handshaking';
-      agentState[agentId].error = null;
-      renderAgents();
-
-      try {
-        // Step 1: Generate token and trigger the agent-specific connection flow
-        const hsRes = await fetch(`${API}/api/handshake`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ workspacePath, agent: agentId }),
-        });
-        const hsData = await hsRes.json();
-        if (!hsData.ok) throw new Error(hsData.error);
-        agentState[agentId].token = hsData.token;
-        renderAgents();
-
-        // Step 2: Wait briefly for the session to appear, then connect
-        await new Promise(r => setTimeout(r, 2000));
-
-        const connRes = await fetch(`${API}/api/connect`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ workspacePath, agent: agentId }),
-        });
-        const connData = await connRes.json();
-        if (!connData.ok) throw new Error(connData.error);
-
-        agentState[agentId].status = 'connected';
-        agentState[agentId].transcriptPath = connData.transcriptPath;
-        agentState[agentId].eventCount = connData.eventCount;
-        agentState[agentId].token = null;
-        renderAgents();
-        showToast(`✓ ${agentId} connected — ${connData.eventCount} events loaded`, 'success');
-        syncMemory();
-      } catch (err) {
-        agentState[agentId].status = 'error';
-        agentState[agentId].error = err.message;
-        renderAgents();
-        showToast(err.message, 'error');
-      }
-    }
-
-    // ── SYNC MEMORY: trigger backend re-parse then fetch fresh memory ──
-    let syncInProgress = false;
-    async function syncMemory(showToastOnSuccess = false) {
-      if (!workspacePath || syncInProgress) return;
-      syncInProgress = true;
-
-      const btn = document.getElementById('syncBtn');
-      if (btn) btn.textContent = '↻ Syncing...';
-
-      try {
-        // 1. Tell backend to re-read all transcripts and rebuild memory.json
-        await fetch(`${API}/api/sync`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ workspacePath }),
-        });
-
-        // 2. Fetch the freshly built memory
-        const res = await fetch(`${API}/api/memory?workspacePath=${encodeURIComponent(workspacePath)}`);
-        const data = await res.json();
-        if (!data.ok) return;
-
-        const memory = data.memory;
-        allEvents = [];
-        allArtifacts = [];
-        allTasks = [];
-        allMessages = [];
-
-        for (const [agentId, agentData] of Object.entries(memory.agents || {})) {
-          if (agentData.status === 'connected') {
-            agentState[agentId] = {
-              status: 'connected',
-              transcriptPath: agentData.transcriptPath,
-              eventCount: agentData.eventCount || 0,
-              error: null,
-              token: null,
-            };
-            if (agentData.artifacts) allArtifacts.push(...agentData.artifacts.map(a => ({ ...a, source: agentId })));
-            if (agentData.tasks) allTasks.push(...agentData.tasks.map(t => ({ ...t, source: agentId })));
-            if (agentData.messages) allMessages.push(...agentData.messages.map(m => ({ ...m, source: agentId })));
-          }
-        }
-
-        allEvents = Array.isArray(memory.timeline) && memory.timeline.length
-          ? memory.timeline
-          : Object.values(memory.agents || {})
-            .filter(a => a.status === 'connected')
-            .flatMap(a => a.events || []);
-
-        allEvents.sort((a, b) => new Date(a.ts || 0) - new Date(b.ts || 0));
-        renderAgents();
-        renderTimeline();
-        renderMemoryDashboard();
-
-        const lastSync = memory.lastSync ? new Date(memory.lastSync).toLocaleTimeString() : 'never';
-        document.getElementById('memoryMeta').textContent =
-          `${allEvents.length} events · last sync: ${lastSync}`;
-
-        if (showToastOnSuccess) showToast(`✓ Synced — ${allEvents.length} total events`, 'success');
-      } catch (err) {
-        console.error('Sync error:', err);
-      } finally {
-        syncInProgress = false;
-        if (btn) btn.textContent = '↻ Sync Memory';
-      }
-    }
-
-    // ── RENDER TIMELINE ──
-    function setFilter(filter, btn) {
-      activeFilter = filter;
-      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-      btn.classList.add('active');
-      renderTimeline();
-    }
-
-    function renderTimeline() {
-      const timeline = document.getElementById('timeline');
-      let events = allEvents;
-
-      if (activeFilter !== 'all') {
-        events = events.filter(e => {
-          if (activeFilter === 'user' || activeFilter === 'assistant') return e.role === activeFilter;
-          if (activeFilter === 'code_edit') return e.kind === 'code_edit' || e.kind === 'artifact';
-          return e.source === activeFilter;
-        });
-      }
-
-      if (events.length === 0) {
-        timeline.innerHTML = `
-          <div class="empty-state">
-            <div class="icon">${allEvents.length === 0 ? '🔗' : '🔍'}</div>
-            <h3>${allEvents.length === 0 ? 'No Memory Loaded' : 'No Results'}</h3>
-            <p>${allEvents.length === 0
-            ? 'Connect at least one agent to populate the memory timeline.'
-            : 'No events match the current filter.'}</p>
-          </div>`;
-        return;
-      }
-
-      const srcCls = {
-        'Antigravity': 'src-antigravity',
-        'Codex': 'src-codex',
-        'Claude Code': 'src-claude',
-        'GitHub Copilot': 'src-copilot',
-        'Cursor': 'src-cursor',
-      };
-
-      timeline.innerHTML = events.map(e => {
-        const kind = e.kind || 'message';
-        const avatar = kind === 'code_edit' ? '✎' : kind === 'artifact' ? '📄' : (e.role === 'user' ? 'U' : 'A');
-        const avatarCls = kind === 'message' ? e.role : kind;
-        const cardCls = kind === 'code_edit' ? 'code-edit' : kind === 'artifact' ? 'artifact' : '';
-
-        let body = '';
-        if (kind === 'code_edit' || kind === 'artifact') {
-          const fileLine = e.file || e.path ? `<div class="edit-file">${escHtml(e.file || e.path)}</div>` : '';
-          const summaryLine = e.summary ? `<div class="edit-summary">${escHtml(e.summary)}</div>` : '';
-          const diffLine = e.diff
-            ? `<pre class="edit-diff">${formatDiff(e.diff)}</pre>`
-            : `<div class="edit-summary">File edited at this point in the chat (no diff stored).</div>`;
-          const contentLine = kind === 'artifact' && e.content
-            ? `<div class="event-content" style="margin-top:8px;">${escHtml(e.content)}</div>`
-            : '';
-          body = `${fileLine}${summaryLine}${diffLine}${contentLine}`;
-        } else {
-          body = `<div class="event-content">${escHtml(e.content || '')}</div>`;
-        }
-
-        return `
-        <div class="event-card ${cardCls}">
-          <div class="event-avatar ${avatarCls}">${avatar}</div>
-          <div class="event-body">
-            <div class="event-meta">
-              <span class="event-source ${srcCls[e.source] || ''}">${escHtml(e.source || '')}</span>
-              <span class="event-role">${kind === 'message' ? e.role : kind.replace('_', ' ')}</span>
-              <span class="event-ts">${e.ts ? new Date(e.ts).toLocaleString() : ''}</span>
-            </div>
-            ${body}
-          </div>
-        </div>`;
-      }).join('');
-    }
-
-    function formatDiff(diff) {
-      return String(diff || '')
-        .split('\n')
-        .map(line => {
-          const safe = escHtml(line);
-          if (line.startsWith('+') && !line.startsWith('+++')) return `<span class="add">${safe}</span>`;
-          if (line.startsWith('-') && !line.startsWith('---')) return `<span class="del">${safe}</span>`;
-          return safe;
-        })
-        .join('\n');
-    }
-
-    // ── RENDER MEMORY DASHBOARD ──
-    function switchView(view) {
-      currentView = view;
-      document.getElementById('navTimelineBtn').classList.toggle('active', view === 'timeline');
-      document.getElementById('navMemoryBtn').classList.toggle('active', view === 'memory');
-      
-      document.getElementById('viewTimeline').style.display = view === 'timeline' ? 'flex' : 'none';
-      document.getElementById('viewMemory').style.display = view === 'memory' ? 'flex' : 'none';
-      
-      document.getElementById('viewTitle').textContent = view === 'timeline' ? 'Unified Event Timeline' : 'Agent Memory & State';
-    }
-
-    function renderMemoryDashboard() {
-      // Artifacts
-      const artGrid = document.getElementById('artifactsGrid');
-      if (allArtifacts.length === 0) {
-        artGrid.innerHTML = '<div style="color:var(--text-3);font-size:13px;">No artifacts found.</div>';
-      } else {
-        artGrid.innerHTML = allArtifacts.map(a => {
-          let metaDesc = '';
-          if (a.metadata) {
-            try {
-              const m = JSON.parse(a.metadata);
-              metaDesc = m.Summary || m.ArtifactType || '';
-            } catch(e) {}
-          }
-          return `
-            <div class="agent-card" style="margin:0; display:flex; flex-direction:column; gap: 8px;">
-              <div style="font-family:var(--mono); font-size:12px; font-weight:600; color:var(--accent);">${escHtml(a.name)}</div>
-              <div style="font-size:11px; color:var(--text-2);">${escHtml(a.source)}</div>
-              <div style="font-size:12px; line-height:1.5; color:var(--text); flex:1; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">
-                ${escHtml(metaDesc || a.content.substring(0, 100) + '...')}
+      <main class="main">
+        <section class="view active" id="viewOverview">
+          <div class="stats-row" id="statsRow"></div>
+          <div class="grid-2">
+            <article class="card">
+              <div class="card-head">
+                <h2>Handoff</h2>
+                <span class="muted" id="handoffMeta">relay_context.md</span>
               </div>
-            </div>
-          `;
-        }).join('');
-      }
-
-      // Tasks
-      const tasksList = document.getElementById('tasksList');
-      if (allTasks.length === 0) {
-        tasksList.innerHTML = '<div style="color:var(--text-3);font-size:13px;">No background tasks.</div>';
-      } else {
-        tasksList.innerHTML = allTasks.map(t => `
-          <div style="background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:10px;">
-            <div style="font-family:var(--mono); font-size:11px; color:var(--success); margin-bottom:6px;">${escHtml(t.id)}</div>
-            <div style="font-size:11px; font-family:var(--mono); color:var(--text-3); white-space:pre-wrap; max-height:60px; overflow:hidden;">${escHtml(t.preview.trim())}</div>
+              <div class="md-body" id="handoffBody"></div>
+            </article>
+            <article class="card">
+              <div class="card-head"><h2>Current tasks</h2></div>
+              <div class="md-body" id="tasksBody"></div>
+            </article>
           </div>
-        `).join('');
-      }
+          <article class="card">
+            <div class="card-head"><h2>Recent code edits</h2></div>
+            <div class="edit-preview-list" id="overviewEdits"></div>
+          </article>
+        </section>
 
-      // Messages
-      const msgList = document.getElementById('messagesList');
-      if (allMessages.length === 0) {
-        msgList.innerHTML = '<div style="color:var(--text-3);font-size:13px;">No system messages.</div>';
-      } else {
-        msgList.innerHTML = allMessages.slice(-10).reverse().map(m => `
-          <div style="background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:10px;">
-            <div style="font-size:11px; color:var(--text-2); margin-bottom:4px;">${m.type || 'System Event'}</div>
-            <div style="font-size:12px; color:var(--text); word-break:break-word;">${escHtml(JSON.stringify(m.payload || m))}</div>
+        <section class="view" id="viewActivity">
+          <div class="toolbar">
+            <div class="filters" id="activityFilters"></div>
+            <button class="btn btn-ghost btn-sm" id="loadMoreBtn" hidden>Load more</button>
           </div>
-        `).join('');
-      }
-    }
+          <div class="feed" id="activityFeed"></div>
+        </section>
 
-    // ── HELPERS ──
-    function escHtml(str) {
-      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
+        <section class="view" id="viewEdits">
+          <div class="edits-grid" id="editsGrid"></div>
+        </section>
 
-    function showToast(msg, type = 'success') {
-      const existing = document.querySelector('.toast');
-      if (existing) existing.remove();
-      const t = document.createElement('div');
-      t.className = `toast ${type}`;
-      t.textContent = msg;
-      document.body.appendChild(t);
-      setTimeout(() => t.remove(), 4000);
-    }
+        <section class="view" id="viewMemory">
+          <div class="memory-tabs" id="memoryTabs"></div>
+          <article class="card card-fill">
+            <div class="md-body md-body-large" id="memoryBody"></div>
+          </article>
+        </section>
 
-    // ── INIT ──
-    checkServer();
-    if (workspacePath) {
-      document.getElementById('wsPath').value = workspacePath;
-      onWorkspaceSet();
-    }
-    setInterval(checkServer, 10000);
-    // Auto-sync every 5 seconds to pick up new events from any connected agent
-    setInterval(() => syncMemory(false), 5000);
-  </script>
+        <section class="view" id="viewSettings">
+          <div class="settings-grid">
+            <article class="card">
+              <div class="card-head"><h2>Project name</h2></div>
+              <div class="settings-body">
+                <input class="input" id="projectNameInput" type="text" placeholder="My project" />
+                <button class="btn btn-primary" id="saveNameBtn">Save name</button>
+              </div>
+            </article>
+            <article class="card">
+              <div class="card-head">
+                <h2>API key</h2>
+                <span class="muted">For MCP &amp; remote agents</span>
+              </div>
+              <div class="settings-body">
+                <div class="api-key-box">
+                  <code id="apiKeyDisplay">—</code>
+                  <button class="btn btn-ghost btn-sm" id="copyKeyBtn">Copy</button>
+                </div>
+                <p class="settings-hint">Use as <code>Authorization: Bearer &lt;key&gt;</code> or set <code>RELAY_API_KEY</code> for MCP.</p>
+              </div>
+            </article>
+            <article class="card">
+              <div class="card-head"><h2>Workspace path</h2></div>
+              <div class="settings-body">
+                <div class="path-box" id="workspacePathDisplay"></div>
+              </div>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- ADD PROJECT MODAL -->
+  <div class="modal-backdrop" id="addModal" hidden>
+    <div class="modal">
+      <div class="modal-head">
+        <h2>Add project</h2>
+        <button class="modal-close" id="closeAddModal">×</button>
+      </div>
+      <div class="modal-body">
+        <label class="field-label">Workspace folder</label>
+        <input class="input" id="addWsPath" type="text" placeholder="C:\path\to\project" />
+        <label class="field-label">Project name (optional)</label>
+        <input class="input" id="addProjectName" type="text" placeholder="Defaults to folder name" />
+        <p class="settings-hint">Creates <code>.relay/</code> if missing and generates a project API key.</p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" id="cancelAddBtn">Cancel</button>
+        <button class="btn btn-primary" id="confirmAddBtn">Add project</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETUP MODAL (after relay init) -->
+  <div class="modal-backdrop" id="setupModal" hidden>
+    <div class="modal modal-wide">
+      <div class="modal-head">
+        <h2>Project ready</h2>
+        <button class="modal-close" id="closeSetupModal">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="setup-lead">Your project is registered. Save your API key — agents and MCP need it to access this project's memory.</p>
+        <label class="field-label">Project name</label>
+        <input class="input" id="setupNameInput" type="text" />
+        <label class="field-label">API key</label>
+        <div class="api-key-box">
+          <code id="setupApiKey">—</code>
+          <button class="btn btn-ghost btn-sm" id="copySetupKeyBtn">Copy</button>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" id="saveSetupBtn">Save name</button>
+        <button class="btn btn-primary" id="openProjectBtn">Open project</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastHost"></div>
+  <script src="app.js"></script>
 </body>
-
 </html>

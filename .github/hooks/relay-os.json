@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "hooks": {
+    "agentStop": [
+      {
+        "type": "command",
+        "bash": "node \".relay/hooks/relay-copilot-stop.js\"",
+        "powershell": "node \".relay/hooks/relay-copilot-stop.js\"",
+        "cwd": ".",
+        "timeoutSec": 120
+      }
+    ]
+  }
+}

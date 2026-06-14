@@ -1,0 +1,11 @@
+{
+  "relay-os": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node \".relay/hooks/relay-antigravity-stop.js\"",
+        "timeout": 120
+      }
+    ]
+  }
+}

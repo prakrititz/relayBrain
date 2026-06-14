@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \".relay/hooks/relay-codex-stop.js\"",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}
