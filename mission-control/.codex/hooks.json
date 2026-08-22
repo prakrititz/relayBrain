@@ -1,0 +1,39 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|Replace",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/Prakrititz Borah/Downloads/Relay/relay.it/hooks/relay-codex-pre-tool.js\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|Replace",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/Prakrititz Borah/Downloads/Relay/relay.it/hooks/relay-codex-post-tool.js\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/Prakrititz Borah/Downloads/Relay/relay.it/hooks/relay-codex-stop.js\"",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

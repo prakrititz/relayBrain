@@ -1,0 +1,23 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "productName": "Relay",
+  "version": "0.1.0",
+  "identifier": "it.relay.desktop",
+  "build": {
+    "frontendDist": "../../mission-control",
+    "devUrl": "http://localhost:3002"
+  },
+  "app": {
+    "windows": [
+      { "title": "Relay Mission Control", "width": 1280, "height": 800, "visible": false }
+    ],
+    "trayIcon": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": true
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all"
+  }
+}

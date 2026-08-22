@@ -1,0 +1,13 @@
+{
+  "name": "relay-vscode",
+  "displayName": "Relay",
+  "description": "Always-on Relay coordination for any workspace",
+  "version": "0.1.0",
+  "publisher": "relay",
+  "engines": { "vscode": "^1.85.0" },
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [{ "command": "relay.openMissionControl", "title": "Relay: Open Mission Control" }]
+  }
+}

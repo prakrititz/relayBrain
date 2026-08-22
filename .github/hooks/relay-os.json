@@ -1,11 +1,39 @@
 {
   "version": 1,
   "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "node \"C:/Users/Prakrititz Borah/Downloads/Relay/relay.it/hooks/relay-copilot-pre-tool.js\"",
+        "powershell": "node \"C:/Users/Prakrititz Borah/Downloads/Relay/relay.it/hooks/relay-copilot-pre-tool.js\"",
+        "matcher": "edit|create",
+        "cwd": ".",
+        "timeoutSec": 10
+      },
+      {
+        "type": "command",
+        "bash": "node \"C:/Users/Prakrititz Borah/Downloads/Relay/relay.it/hooks/relay-copilot-pre-read.js\"",
+        "powershell": "node \"C:/Users/Prakrititz Borah/Downloads/Relay/relay.it/hooks/relay-copilot-pre-read.js\"",
+        "matcher": "view|grep|glob",
+        "cwd": ".",
+        "timeoutSec": 10
+      }
+    ],
+    "postToolUse": [
+      {
+        "type": "command",
+        "bash": "node \"C:/Users/Prakrititz Borah/Downloads/Relay/relay.it/hooks/relay-copilot-post-tool.js\"",
+        "powershell": "node \"C:/Users/Prakrititz Borah/Downloads/Relay/relay.it/hooks/relay-copilot-post-tool.js\"",
+        "matcher": "edit|create",
+        "cwd": ".",
+        "timeoutSec": 10
+      }
+    ],
     "agentStop": [
       {
         "type": "command",
-        "bash": "node \".relay/hooks/relay-copilot-stop.js\"",
-        "powershell": "node \".relay/hooks/relay-copilot-stop.js\"",
+        "bash": "node \"C:/Users/Prakrititz Borah/Downloads/Relay/relay.it/hooks/relay-copilot-stop.js\"",
+        "powershell": "node \"C:/Users/Prakrititz Borah/Downloads/Relay/relay.it/hooks/relay-copilot-stop.js\"",
         "cwd": ".",
         "timeoutSec": 120
       }

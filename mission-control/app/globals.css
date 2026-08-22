@@ -1,0 +1,238 @@
+:root {
+  /* ==========================================================================
+     OrbitOS 2.0 theme — monochrome.
+     Pure black surfaces, white as the only chrome accent. Colour appears ONLY
+     where it carries meaning (agent brand logos, lock/conflict status, diffs).
+
+     Hard rule kept from the last pass: every surface is a SOLID colour. No
+     rgba-over-black, no backdrop blur, no see-through chips.
+     ========================================================================== */
+
+  /* Surfaces — flat black. Chrome is separated by spacing and type, not by
+     grey fills or bright edges. Borders are hairlines you feel, not see. */
+  --bg: #000000;
+  --bg-rail: #000000;
+  --panel: #000000;
+  --panel-2: #070707;
+  --elev: #0b0b0b;
+  --elev-2: #161616;
+  --border: #1a1a1a;
+  --border-soft: #101010;
+  --sunken: #060606;
+  --scrim: #000000;
+
+  /* Type */
+  --text: #ffffff;
+  --muted: #8c8c8c;
+  --faint: #5a5a5a;
+  --code: #d0d0d0;
+
+  /* Accent = white. Buttons invert to black ink. */
+  --accent: #ffffff;
+  --accent-hover: #e2e2e2;
+  --accent-deep: #1a1a1a;
+  --accent-edge: #3d3d3d;
+  --accent-ink: #000000;
+
+  /* Back-compat: older rules still reference --amber as "the accent". */
+  --amber: #ffffff;
+  --amber-dim: #1a1a1a;
+
+  /* Status — the only colour in the chrome, because it means something */
+  --green: #3dd68c;
+  --green-dim: #0b2419;
+  --red: #ff6b6b;
+  --red-dim: #2a1212;
+  --red-edge: #4d2020;
+  --red-text: #ffb4b0;
+  --yellow: #e3b341;
+  --yellow-dim: #2a2109;
+  --blue: #6cb6ff;
+  --blue-dim: #0e1c2b;
+  --blue-edge: #24384d;
+  --violet: #b794f4;
+  --violet-dim: #1c1329;
+  --diff-add: #6ee7a0;
+  --diff-del: #ff8d8d;
+
+  /* Coordinator board STATE colours.
+     Validated against the black surface: all clear 3:1, and each state also
+     ships an icon + word in the UI so meaning never rests on colour alone.
+     (Agent identity is NOT colour-coded — only three hues stay separable for
+     colour-blind viewers under all-pairs testing, and there are five agents.) */
+  --holding: #0ca30c;
+  --waiting: #fab219;
+  --clash:   #d03b3b;
+  --idle:    #6a6a6a;
+
+  /* Per-agent brand accents — logos keep their own identity */
+  --agent-claude: #d97757;
+  --agent-cursor: #b9c0cc;
+  --agent-codex: #10a37f;
+  --agent-copilot: #6cb6ff;
+  --agent-antigravity: #4285f4;
+
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.75);
+  --radius: 3px;
+  --font: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", "Cascadia Code", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body, #__next { height: 100%; overflow: hidden; color-scheme: dark; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, textarea, select { font-family: inherit; color: inherit; background: var(--elev); }
+button { cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+a { color: var(--accent); }
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #333333 transparent;
+}
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: #4a4a4a; background-clip: padding-box; }
+*::-webkit-scrollbar-corner { background: transparent; }
+
+/* Solid panel (OrbitOS "glass" panel, de-transparent) */
+.glass-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--faint);
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@keyframes pulse-active {
+  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.35); }
+  70% { box-shadow: 0 0 0 7px rgba(255, 255, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+}
+
+@keyframes pulse-warning {
+  0% { box-shadow: 0 0 0 0 rgba(227, 179, 65, 0.4); }
+  70% { box-shadow: 0 0 0 7px rgba(227, 179, 65, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(227, 179, 65, 0); }
+}
+
+@keyframes pulse-critical {
+  0% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.4); }
+  70% { box-shadow: 0 0 0 7px rgba(255, 107, 107, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
+}
+
+.md {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.md > :first-child { margin-top: 0; }
+.md > :last-child { margin-bottom: 0; }
+.md p { margin: 0 0 0.65em; line-height: 1.5; }
+.md p:last-child { margin-bottom: 0; }
+.md h1, .md h2, .md h3, .md h4 {
+  margin: 0.85em 0 0.4em;
+  font-weight: 650;
+  line-height: 1.3;
+  color: var(--text);
+}
+.md h1 { font-size: 15px; }
+.md h2 { font-size: 14px; }
+.md h3, .md h4 { font-size: 13px; }
+.md ul, .md ol { margin: 0.4em 0 0.7em; padding-left: 1.3em; }
+.md li { margin: 0.2em 0; }
+.md li > p { margin: 0; }
+.md blockquote {
+  margin: 0.5em 0;
+  padding: 4px 0 4px 10px;
+  border-left: 2px solid var(--accent);
+  color: var(--muted);
+}
+.md hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 10px 0;
+}
+.md a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.md table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.6em 0;
+  font-size: 11px;
+}
+.md th, .md td {
+  border: 1px solid var(--border);
+  padding: 4px 7px;
+  text-align: left;
+}
+.md th { background: var(--elev); color: var(--text); }
+.md pre {
+  margin: 0.55em 0;
+  padding: 8px 10px;
+  background: var(--sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: auto;
+  max-height: 280px;
+}
+.md-code {
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--code);
+  white-space: pre;
+  display: block;
+}
+.md-inline {
+  font-family: var(--mono);
+  font-size: 0.92em;
+  background: var(--elev);
+  border: 1px solid var(--border-soft);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+.md-img { max-width: 100%; border-radius: var(--radius); margin: 6px 0; }
+.md-clamp {
+  max-height: 9.6em;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent);
+  mask-image: linear-gradient(to bottom, #000 62%, transparent);
+}
+.md strong { font-weight: 650; color: var(--text); }
+.md em { color: var(--text); }
+.md input[type="checkbox"] {
+  accent-color: var(--accent);
+  margin-right: 6px;
+}
+.md ul.contains-task-list { list-style: none; padding-left: 1em; }

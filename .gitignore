@@ -1,26 +1,16 @@
-# Dependencies
 node_modules/
-
-# Build outputs
 .next/
-dist/
-build/
-coverage/
 out/
-
-# Runtime / local state
 .relay/
-.env
-.env.*
 *.log
-*.tsbuildinfo
-
-# OS / editor files
 .DS_Store
-Thumbs.db
-.vscode/
-.idea/
+mission-control/.next/
+data/
 
-# Scratch files
-temp.*
-*.tmp
+# Generated per-machine hook paths (rewritten by relay serve / relay add)
+.cursor/hooks.json
+.claude/settings.json
+.codex/hooks.json
+.agents/hooks.json
+.github/hooks/relay-os.json
+

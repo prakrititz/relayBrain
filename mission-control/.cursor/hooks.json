@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "node \"C:/Users/Prakrititz Borah/Downloads/Relay/relay.it/hooks/relay-cursor-pre-tool.js\"",
+        "matcher": "Write|Edit|str_replace_based_edit_tool|create_file",
+        "timeout": 10
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "node \"C:/Users/Prakrititz Borah/Downloads/Relay/relay.it/hooks/relay-cursor-post-tool.js\"",
+        "matcher": "Write|Edit|str_replace_based_edit_tool|create_file",
+        "timeout": 10
+      }
+    ],
+    "stop": [
+      {
+        "command": "node \"C:/Users/Prakrititz Borah/Downloads/Relay/relay.it/hooks/relay-cursor-stop.js\"",
+        "loop_limit": 1
+      }
+    ]
+  }
+}

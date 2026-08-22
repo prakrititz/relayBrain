@@ -1,0 +1,35 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": ".*replace_file_content.*|.*write_to_file.*|.*multi_replace_file_content.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/Prakrititz Borah/Downloads/Relay/relay.it/hooks/relay-antigravity-pre-tool.js\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": ".*replace_file_content.*|.*write_to_file.*|.*multi_replace_file_content.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/Prakrititz Borah/Downloads/Relay/relay.it/hooks/relay-antigravity-post-tool.js\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node \"C:/Users/Prakrititz Borah/Downloads/Relay/relay.it/hooks/relay-antigravity-stop.js\"",
+        "timeout": 120
+      }
+    ]
+  }
+}
