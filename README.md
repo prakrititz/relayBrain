@@ -8,6 +8,8 @@
 
 **Twelve agents on one repo, and none of them blind to the others.**
 
+[**📖 Read the Documentation**](https://relay.vercel.app/docs.html)
+
 <br/>
 
 <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%E2%89%A518-3c873a?style=for-the-badge&logo=node.js&logoColor=white" alt="Node 18+"></a>
@@ -52,9 +54,11 @@ Relay sits under every agent as a **coordination layer**. Pre-tool hooks claim a
 
 > **One host, no backend.** One person runs `relay serve` — that machine *is* the server. Everyone else connects over an ngrok tunnel, straight to that laptop. Nothing lives on infrastructure you do not own.
 
-<p align="center">
-  <img src="./screenRec.gif" alt="Relay Demo" />
-</p>
+<div align="center">
+
+![Relay Demo](./screenRec.gif)
+
+</div>
 
 ---
 
