@@ -8,7 +8,7 @@
 
 **Twelve agents on one repo, and none of them blind to the others.**
 
-[**📖 Read the Documentation**]((https://relay-brain.vercel.app/docs.html))
+[**📖 Read the Documentation**](https://relay-brain.vercel.app/docs.html)
 
 <br/>
 
