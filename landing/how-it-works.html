@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="How /.relay works — file locking, dependency-graph locking, patch sync across machines, rooms over ngrok, Mission Control, hooks, and MCP.">
+  <title>How /.relay works</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .page-hero { padding: 120px 0 80px; }
+    .page-hero h1 {
+      margin: 24px 0 0;
+      font: 600 clamp(44px, 6vw, 76px)/0.98 var(--display);
+      letter-spacing: -0.03em;
+    }
+    .page-hero h1 span { color: var(--faint); }
+    .page-hero p {
+      max-width: 640px;
+      margin: 28px 0 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.65;
+    }
+    .toc {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 40px;
+    }
+    .toc a {
+      padding: 8px 14px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--muted);
+      font: 400 11px/1 var(--mono);
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .toc a:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
+    .spec-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      margin-top: 50px;
+      background: var(--line);
+      border: 1px solid var(--line);
+    }
+    .spec-grid article {
+      padding: 34px 28px;
+      background: var(--black);
+    }
+    .spec-grid h3 {
+      margin: 14px 0 12px;
+      font: 600 21px/1.25 var(--display);
+      letter-spacing: -0.01em;
+    }
+    .spec-grid p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .spec-grid code {
+      color: #fff;
+      font: 400 12px/1 var(--mono);
+      background: rgba(255,255,255,0.06);
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+    .lifecycle {
+      margin-top: 50px;
+      border-top: 1px solid var(--line);
+    }
+    .lifecycle-row {
+      display: grid;
+      grid-template-columns: 90px 220px 1fr;
+      gap: 24px;
+      align-items: baseline;
+      padding: 26px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .lifecycle-row > b {
+      color: var(--faint);
+      font: 400 11px/1 var(--mono);
+    }
+    .lifecycle-row > strong {
+      font: 500 15px/1.4 var(--display);
+    }
+    .lifecycle-row > p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .lifecycle-row code {
+      color: #fff;
+      font: 400 12px/1 var(--mono);
+    }
+    .diagram {
+      margin-top: 50px;
+      padding: 32px 28px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--surface);
+      overflow-x: auto;
+    }
+    .diagram pre {
+      margin: 0;
+      color: var(--muted);
+      font: 400 12px/1.75 var(--mono);
+      white-space: pre;
+    }
+    .diagram b { color: #fff; font-weight: 400; }
+    .note-list { margin: 40px 0 0; padding: 0; list-style: none; }
+    .note-list li {
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      gap: 20px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .note-list li span { color: #fff; font: 400 11px/1.5 var(--mono); }
+    @media (max-width: 800px) {
+      .page-hero { padding: 80px 0 55px; }
+      .spec-grid { grid-template-columns: 1fr; }
+      .lifecycle-row { grid-template-columns: 1fr; gap: 10px; }
+      .note-list li { grid-template-columns: 1fr; gap: 6px; }
+      .diagram pre { font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav shell" aria-label="Primary navigation">
+      <a class="wordmark" href="index.html" aria-label="/.relay home"><img src="logo.png" alt="" class="inline-logo" /> /.relay</a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="index.html#demo">Watch the demo</a>
+        <a href="docs.html">Docs</a>
+        <a href="https://github.com/prakrititz/relayBrain" target="_blank">Try now for free <span aria-hidden="true">↗</span></a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="page-hero shell">
+      <p class="eyebrow"><span class="status-dot"></span> How it works</p>
+      <h1>Every feature,<br><span>end to end.</span></h1>
+      <p>/.relay is a coordination layer that sits underneath whatever agents you already run. It does not replace Git and it does not read your prompts. It arbitrates writes, understands what a change touches, and keeps every machine in the room on the same working state.</p>
+      <div class="toc">
+        <a href="#lifecycle">Write lifecycle</a>
+        <a href="#locking">File locking</a>
+        <a href="#depgraph">Dependency-graph locking</a>
+        <a href="#patches">Patch sync</a>
+        <a href="#rooms">Rooms &amp; tunnels</a>
+        <a href="#control">Mission Control</a>
+        <a href="#hooks">Agent hooks</a>
+        <a href="#mcp">MCP</a>
+        <a href="#cli">CLI reference</a>
+        <a href="#roadmap">Roadmap</a>
+      </div>
+    </section>
+
+    <section class="shell section" id="lifecycle">
+      <div class="section-heading">
+        <div class="section-index">01 / Write lifecycle</div>
+        <h2>What happens when<br>an agent edits a file.</h2>
+      </div>
+      <div class="lifecycle">
+        <div class="lifecycle-row">
+          <b>step 01</b>
+          <strong>Agent calls a write tool</strong>
+          <p><code>Edit</code>, <code>Write</code>, <code>apply_patch</code>, <code>write_to_file</code> — whichever your agent uses. The call is intercepted before it reaches disk.</p>
+        </div>
+        <div class="lifecycle-row">
+          <b>step 02</b>
+          <strong>Pre-tool hook claims</strong>
+          <p>The hook calls <code>relay_claim_file</code> against the room's lock table. Locks carry a TTL, so a crashed agent never wedges a file permanently.</p>
+        </div>
+        <div class="lifecycle-row">
+          <b>step 03</b>
+          <strong>Dependency graph consulted</strong>
+          <p>Relay checks whether the target is a dependent of anything another agent currently holds. If the blast radius overlaps, the claim is refused.</p>
+        </div>
+        <div class="lifecycle-row">
+          <b>step 04</b>
+          <strong>Write proceeds or is blocked</strong>
+          <p>Granted: the agent edits normally. Refused: the agent is told who holds the file and moves on to other work instead of overwriting it.</p>
+        </div>
+        <div class="lifecycle-row">
+          <b>step 05</b>
+          <strong>Post-tool hook releases</strong>
+          <p>The lock is dropped the moment the edit completes and the change is recorded as a <code>code_edit</code> event.</p>
+        </div>
+        <div class="lifecycle-row">
+          <b>step 06</b>
+          <strong>Room propagates the patch</strong>
+          <p>Teammates' clones receive the change as a patch, and Mission Control's board updates for everyone in the room.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="shell section" id="locking">
+      <div class="section-heading">
+        <div class="section-index">02 / File locking</div>
+        <h2>Exclusive claims,<br>with an expiry.</h2>
+      </div>
+      <p class="protocol-intro">When multiple agents try to edit the same file, /.relay uses file locking to prevent destructive conflicts. If one agent is modifying a component, another agent cannot silently overwrite those changes.</p>
+      <div class="spec-grid">
+        <article>
+          <p class="eyebrow">Exclusive by default</p>
+          <h3>One writer per file</h3>
+          <p>A claim is per workspace and per normalized path, held by a specific agent on a specific machine. Two agents cannot both hold a write lock on the same file.</p>
+        </article>
+        <article>
+          <p class="eyebrow">TTL-based</p>
+          <h3>Locks expire on their own</h3>
+          <p>Every claim carries a time-to-live (default 15s, clamped between 5s and 5m) with periodic cleanup. A dead agent or a killed terminal never leaves a file wedged.</p>
+        </article>
+        <article>
+          <p class="eyebrow">Identity-aware</p>
+          <h3>Locks have an owner</h3>
+          <p>Each lock records the GitHub login and the agent that took it, so the board says <em>@arjun / codex</em> — not an anonymous process id.</p>
+        </article>
+        <article>
+          <p class="eyebrow">Direct arbitration</p>
+          <h3>Hooks talk to the host</h3>
+          <p>Claims go straight to the host over HTTP, independent of the board's mirror — locking keeps working even when the display lags. <code>relay doctor</code> checks both chains separately.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="shell section" id="depgraph">
+      <div class="section-heading">
+        <div class="section-index">03 / Dependency-graph locking</div>
+        <h2>Files do not<br>exist alone.</h2>
+      </div>
+      <p class="protocol-intro">A change in one file can affect dozens of others. So /.relay goes beyond simple file locks. Instead of only asking <em>"is this exact file being edited?"</em>, it can answer <em>"does this change affect files that another agent is currently working on?"</em> — which lets agents work in parallel while staying safe across connected parts of the project.</p>
+      <div class="diagram" aria-label="Dependency-aware lock example">
+<pre>  @pony / claude   ── holds ──►  <b>ui/Header.tsx</b>
+                                      ▲
+                          imported by │
+                                      │
+  @unnath / cursor ── wants ──►  <b>ui/Nav.tsx</b>      ✗ dep-blocked
+  @arjun  / codex  ── wants ──►  <b>lib/date.ts</b>     ✓ granted (disjoint)</pre>
+      </div>
+      <div class="spec-grid">
+        <article>
+          <p class="eyebrow">Tree-sitter parsing</p>
+          <h3>Real imports, not guesses</h3>
+          <p>Import edges are extracted with tree-sitter queries per language, not regex — so the graph reflects what the code actually depends on.</p>
+        </article>
+        <article>
+          <p class="eyebrow">Union across the team</p>
+          <h3>One supergraph per workspace</h3>
+          <p>Each member's graph is ingested and merged into a single edge set for the workspace, so dependents are resolved across every machine in the room.</p>
+        </article>
+        <article>
+          <p class="eyebrow">Languages</p>
+          <h3>Polyglot out of the box</h3>
+          <p>TypeScript, JavaScript, JSX/TSX, Python, Go, Rust, Java, C#, C, C++, PHP, and Ruby. <code>node_modules</code>, <code>.git</code>, <code>dist</code>, and build output are skipped.</p>
+        </article>
+        <article>
+          <p class="eyebrow">Parallel by default</p>
+          <h3>Only overlap is blocked</h3>
+          <p>Disjoint regions of the project stay fully concurrent. The graph narrows what gets refused instead of serializing the whole team.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="shell section" id="patches">
+      <div class="section-heading">
+        <div class="section-index">04 / Patch sync</div>
+        <h2>Same page,<br>different machines.</h2>
+      </div>
+      <p class="protocol-intro">Agents are not always running on the same machine. One developer has an agent running locally; a teammate has their own filesystem, their own environment, their own agents. /.relay keeps everyone synchronized using patch updates — instead of constantly copying the entire project, it propagates the changes, so every agent stays on the same version of the codebase.</p>
+      <div class="spec-grid">
+        <article>
+          <p class="eyebrow">relay push</p>
+          <h3>Share your working tree</h3>
+          <p>Sends your <em>dirty</em> files — uncommitted, in-progress work — into the shared room. No commit required, no branch dance.</p>
+        </article>
+        <article>
+          <p class="eyebrow">relay pull</p>
+          <h3>Take the host's state</h3>
+          <p>Applies the host's current dirty files onto your clone, so your agent starts from what the team actually has right now.</p>
+        </article>
+        <article>
+          <p class="eyebrow">Patches, not copies</p>
+          <h3>Changes on the wire</h3>
+          <p>Only the delta moves. A repo snapshot layer plus an operational-transform core keeps concurrent edits reconcilable rather than last-write-wins.</p>
+        </article>
+        <article>
+          <p class="eyebrow">Conflict surface</p>
+          <h3>Overlaps flagged live</h3>
+          <p>Edits touching the same regions inside a short window are reported as conflicts on the board and through <code>relay_get_conflicts</code>.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="shell section" id="rooms">
+      <div class="section-heading">
+        <div class="section-index">05 / Rooms &amp; tunnels</div>
+        <h2>Your laptop<br>is the backend.</h2>
+      </div>
+      <p class="protocol-intro">None of this needs a hosted backend. One person on the team runs <code>relay serve</code> — that machine is the host. Everyone else connects over an ngrok tunnel, straight to that laptop. You are the server. You are the client. Nothing lives on infrastructure you do not own.</p>
+      <div class="diagram" aria-label="Room topology">
+<pre>  host machine                                   guest machine
+  ─────────────                                  ─────────────
+  agents ─► hooks ─► <b>lock table</b>  ◄── ngrok ──►  hooks ◄─ agents
+                        │                              │
+                     dep graph                    lock mirror
+                        │                              │
+                  <b>Mission Control</b>                <b>Mission Control</b>
+                     :3002                            :3002</pre>
+      </div>
+      <ul class="note-list">
+        <li><span>host</span> Runs <code>relay serve</code>, owns the authoritative lock table, and mints invite links from the Team tab.</li>
+        <li><span>guest</span> Runs their own local relay, joins with the invite link, and mirrors the host's locks onto their board.</li>
+        <li><span>invite-only</span> Rooms can require a member token; guests without one get read-only room context.</li>
+        <li><span>presence</span> Who is online, which project they are on, and which agent is active — live, per member.</li>
+        <li><span>relay doctor</span> Walks the whole chain — local API, room join, tunnel reachability, host locks, mirror state — and names the broken link.</li>
+      </ul>
+    </section>
+
+    <section class="shell section" id="control">
+      <div class="section-heading">
+        <div class="section-index">06 / Mission Control</div>
+        <h2>Everything, on<br>one board.</h2>
+      </div>
+      <p class="protocol-intro">Started by <code>relay serve</code> on <code>localhost:3002</code>, with the API on <code>127.0.0.1:3001</code>. It runs on your machine — there is no hosted dashboard and no account to create.</p>
+      <div class="spec-grid">
+        <article>
+          <p class="eyebrow">File locks panel</p>
+          <h3>Who holds what, right now</h3>
+          <p>The live lock table across every member of the room, labelled by GitHub user and agent, with mirrored and locally-claimed locks distinguished.</p>
+        </article>
+        <article>
+          <p class="eyebrow">Lock graph canvas</p>
+          <h3>The blast radius, drawn</h3>
+          <p>An interactive canvas of the dependency graph with held and blocked files highlighted — the coupling that made a claim fail, made visible.</p>
+        </article>
+        <article>
+          <p class="eyebrow">Code edits &amp; timeline</p>
+          <h3>Every change, in order</h3>
+          <p>A unified activity stream of edits, decisions, and tasks from all agents on all machines.</p>
+        </article>
+        <article>
+          <p class="eyebrow">Agent session chat</p>
+          <h3>Read what agents said</h3>
+          <p>Transcripts are harvested into one time-ordered history you can filter by agent and by owner.</p>
+        </article>
+        <article>
+          <p class="eyebrow">Team &amp; presence</p>
+          <h3>Share and join</h3>
+          <p>Mint the room invite from the Team tab; see who is connected and what workspace they have open.</p>
+        </article>
+        <article>
+          <p class="eyebrow">Notices</p>
+          <h3>Conflicts surfaced</h3>
+          <p>Peer clashes and overlapping edits raise notices instead of waiting for a merge to fail.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="shell section" id="hooks">
+      <div class="section-heading">
+        <div class="section-index">07 / Agent hooks</div>
+        <h2>Installed once.<br>Invisible after.</h2>
+      </div>
+      <p class="protocol-intro"><code>relay clone</code> and <code>relay add</code> write pre-tool (claim), post-tool (release), pre-read, and stop hooks into your project for every supported agent. Bring whatever you already use — nobody on the team has to change how they work.</p>
+      <div class="commands-table-wrapper">
+        <table class="commands-table">
+          <thead>
+            <tr>
+              <th>Agent</th>
+              <th>Config file</th>
+              <th>Write tools intercepted</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Claude Code</td>
+              <td><code>.claude/settings.json</code></td>
+              <td><code>Edit</code> <code>Write</code> <code>NotebookEdit</code></td>
+            </tr>
+            <tr>
+              <td>Cursor</td>
+              <td><code>.cursor/hooks.json</code></td>
+              <td><code>Write</code> <code>Edit</code> <code>Delete</code></td>
+            </tr>
+            <tr>
+              <td>Codex</td>
+              <td><code>.codex/hooks.json</code></td>
+              <td><code>apply_patch</code> <code>Edit</code> <code>Write</code></td>
+            </tr>
+            <tr>
+              <td>GitHub Copilot CLI</td>
+              <td><code>.github/hooks/relay-os.json</code></td>
+              <td><code>edit</code> <code>create</code></td>
+            </tr>
+            <tr>
+              <td>Antigravity</td>
+              <td><code>.agents/hooks.json</code></td>
+              <td><code>write_to_file</code> <code>replace_file_content</code> <code>multi_replace_file_content</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="protocol-note">Pre-read hooks also register interest, so the board can show what an agent is looking at — not only what it is writing.</p>
+    </section>
+
+    <section class="shell section" id="mcp">
+      <div class="section-heading">
+        <div class="section-index">08 / MCP</div>
+        <h2>Tools for agents<br>that want them.</h2>
+      </div>
+      <p class="protocol-intro">Hooks cover coordination automatically. MCP is for agents you want to hand structured tools to — and for reading room context from a machine that has no relay installed at all. Run <code>relay mcp-url</code> to print a ready-to-paste config; the room endpoint is read-only for anyone off the host machine.</p>
+      <div class="commands-table-wrapper">
+        <table class="commands-table">
+          <thead>
+            <tr>
+              <th>Tool</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>relay_claim_file</code></td><td>Acquire an exclusive write lock before editing</td></tr>
+            <tr><td><code>relay_release_file</code></td><td>Release the lock after editing</td></tr>
+            <tr><td><code>relay_status</code></td><td>View the full lock table</td></tr>
+            <tr><td><code>relay_get_conflicts</code></td><td>Overlapping edits in the last 5 minutes</td></tr>
+            <tr><td><code>relay_get_recent_changes</code></td><td>Recent code-edit events across the room</td></tr>
+            <tr><td><code>relay_get_chat_history</code></td><td>Unified agent chat, filterable by agent and owner</td></tr>
+            <tr><td><code>relay_report_change</code></td><td>Push a code-change event</td></tr>
+            <tr><td><code>relay_report_decision</code> / <code>relay_get_decisions</code></td><td>Append and read decisions</td></tr>
+            <tr><td><code>relay_update_task</code> / <code>relay_get_active_tasks</code></td><td>Append and read tasks</td></tr>
+            <tr><td><code>relay_get_project_context</code></td><td>Full JSON project context</td></tr>
+            <tr><td><code>relay_sync</code></td><td>Re-read agent transcripts into unified history</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="shell section" id="cli">
+      <div class="section-heading">
+        <div class="section-index">09 / CLI reference</div>
+        <h2>Ten commands,<br>total.</h2>
+      </div>
+      <div class="commands-table-wrapper">
+        <table class="commands-table">
+          <thead>
+            <tr>
+              <th>Command</th>
+              <th>What it does</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>relay login</code></td><td>Sign in with GitHub (uses the <code>gh</code> CLI, or device flow with <code>GITHUB_CLIENT_ID</code>)</td></tr>
+            <tr><td><code>relay logout</code></td><td>Clear the local session</td></tr>
+            <tr><td><code>relay whoami</code></td><td>Show the signed-in GitHub user and current project</td></tr>
+            <tr><td><code>relay clone &lt;url&gt; [dir]</code></td><td>git clone, register the workspace, install agent hooks</td></tr>
+            <tr><td><code>relay add &lt;path&gt;</code></td><td>Attach an existing local repo</td></tr>
+            <tr><td><code>relay serve</code></td><td>API on <code>127.0.0.1:3001</code> and Mission Control on <code>:3002</code></td></tr>
+            <tr><td><code>relay serve --no-ui</code></td><td>API and coordinator only, no dashboard</td></tr>
+            <tr><td><code>relay push</code></td><td>Send your dirty working-tree files to the shared room</td></tr>
+            <tr><td><code>relay pull</code></td><td>Apply the host's current dirty files onto this clone</td></tr>
+            <tr><td><code>relay status</code></td><td>Health check — room, role, host, ports</td></tr>
+            <tr><td><code>relay mcp-url</code></td><td>Print the MCP config for this room's shared-context endpoint</td></tr>
+            <tr><td><code>relay doctor</code></td><td>Diagnose an empty Coordinator board</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="note-list">
+        <li><span>requires</span> Node.js 18+ (20+ recommended) and npm. No database, no Docker, no hosted account.</li>
+        <li><span>optional</span> The <code>gh</code> CLI for <code>relay login</code>; ngrok for cross-machine rooms.</li>
+        <li><span>env</span> <code>RELAY_PORT</code> (3001) · <code>RELAY_UI_PORT</code> (3002) · <code>RELAY_UI_ORIGIN</code></li>
+      </ul>
+    </section>
+
+    <section class="shell section" id="roadmap">
+      <div class="section-heading">
+        <div class="section-index">10 / Roadmap</div>
+        <h2>What lands<br>next.</h2>
+      </div>
+      <div class="spec-grid">
+        <article>
+          <p class="eyebrow">In progress</p>
+          <h3>Git worktree isolation</h3>
+          <p>Each agent operating in its own isolated workspace off the same repository — free to experiment, modify, and test independently, with changes integrated back into the main codebase when the work is ready.</p>
+        </article>
+        <article>
+          <p class="eyebrow">In progress</p>
+          <h3>Richer conflict resolution</h3>
+          <p>Deeper merge assistance on top of the existing operational-transform and patch layer, so overlapping edits reconcile instead of queueing.</p>
+        </article>
+      </div>
+    </section>
+
+    <aside class="traction shell" aria-label="Project information">
+      <span style="color: #fff; font-weight: 500; font-size: 12px; letter-spacing: 0.1em;">IN FACT, WE USED /.RELAY TO BUILD /.RELAY</span>
+    </aside>
+
+    <section class="final-cta" id="access">
+      <div class="shell final-cta-inner">
+        <p class="eyebrow">The layer is ready</p>
+        <h2>Do not just add more agents.<br>Just relay.it</h2>
+        <a class="button button-large" href="https://github.com/prakrititz/relayBrain" target="_blank">Try now for free <span aria-hidden="true">↗</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer shell">
+    <a class="wordmark" href="index.html"><img src="logo.png" alt="" class="inline-logo" /> /.relay</a>
+    <p>The coordination layer for AI agents.</p>
+    <p>© 2026 /.relay</p>
+  </footer>
+</body>
+</html>

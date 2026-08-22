@@ -836,6 +836,89 @@ a {
   text-align: right;
 }
 
+/* Data Carousel */
+.data-carousel-container {
+  position: relative;
+  margin-top: 54px;
+  max-width: 100%;
+}
+
+.data-carousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  gap: 20px;
+  padding-bottom: 20px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.data-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.data-slide {
+  scroll-snap-align: start;
+  flex: 0 0 100%;
+  min-width: 100%;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 50px 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.data-slide h3 {
+  font: 600 clamp(48px, 8vw, 96px)/1 var(--display);
+  margin: 0 0 20px 0;
+  letter-spacing: -0.04em;
+}
+
+.data-slide p {
+  color: var(--muted);
+  font-size: 22px;
+  line-height: 1.6;
+  margin: 0 0 40px 0;
+  max-width: 700px;
+}
+
+.slide-source {
+  color: var(--faint);
+  font: 400 11px/1.5 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: auto;
+}
+
+.carousel-controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+
+.carousel-controls button {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: #fff;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+  font-size: 18px;
+}
+
+.carousel-controls button:hover {
+  background: #fff;
+  color: #000;
+}
 @media (max-width: 800px) {
   .shell { width: min(100% - 30px, 600px); }
   .nav { min-height: 64px; }
@@ -921,6 +1004,9 @@ a {
   .cta-note span { padding: 0 3px; }
   .footer { min-height: 150px; grid-template-columns: 1fr 1fr; }
   .footer p:nth-child(2) { display: none; }
+  .data-slide { padding: 30px; }
+  .data-slide h3 { font-size: 50px; }
+  .data-slide p { font-size: 17px; margin-bottom: 30px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

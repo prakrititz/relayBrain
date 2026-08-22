@@ -1,0 +1,46 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/Prakrititz Borah/Documents/Github/relayBrain/hooks/relay-claude-pre-tool.js\""
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Grep|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/Prakrititz Borah/Documents/Github/relayBrain/hooks/relay-claude-pre-read.js\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/Prakrititz Borah/Documents/Github/relayBrain/hooks/relay-claude-post-tool.js\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/Prakrititz Borah/Documents/Github/relayBrain/hooks/relay-claude-stop.js\""
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -8,6 +8,8 @@
 
 **Twelve agents on one repo, and none of them blind to the others.**
 
+[**📖 Read the Documentation**]((https://relay-brain.vercel.app/docs.html))
+
 <br/>
 
 <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%E2%89%A518-3c873a?style=for-the-badge&logo=node.js&logoColor=white" alt="Node 18+"></a>
@@ -51,6 +53,12 @@ Git solved this for humans — but Git assumes people committing at human speed,
 Relay sits under every agent as a **coordination layer**. Pre-tool hooks claim a lock before an agent writes; post-tool hooks release it. If one agent is modifying a component, another **cannot silently overwrite** those changes.
 
 > **One host, no backend.** One person runs `relay serve` — that machine *is* the server. Everyone else connects over an ngrok tunnel, straight to that laptop. Nothing lives on infrastructure you do not own.
+
+<div align="center">
+
+![Relay Demo](./screenRec.gif)
+
+</div>
 
 ---
 

@@ -1,0 +1,913 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="/.relay documentation — installation, quickstart, core concepts, the full CLI reference, agent hooks, MCP, Mission Control, configuration, and troubleshooting.">
+  <title>Docs · /.relay</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav shell" aria-label="Primary navigation">
+      <a class="wordmark" href="index.html" aria-label="/.relay home"><img src="logo.png" alt="" class="inline-logo" /> /.relay</a>
+      <div class="nav-links">
+        <a href="index.html#demo">Watch the demo</a>
+        <a href="how-it-works.html">How it works</a>
+        <a href="docs.html">Docs</a>
+        <a href="https://github.com/prakrititz/relayBrain" target="_blank" rel="noopener">GitHub <span aria-hidden="true">↗</span></a>
+      </div>
+    </nav>
+  </header>
+
+  <div class="docs-layout">
+
+    <!-- ================================================== SIDEBAR ===== -->
+    <aside class="docs-sidebar" aria-label="Documentation navigation">
+      <button class="docs-sidebar-toggle" type="button">
+        <span>Browse the docs</span><span aria-hidden="true">☰</span>
+      </button>
+
+      <div class="docs-search">
+        <input id="docs-search-input" type="search" placeholder="Filter…  (press /)" aria-label="Filter documentation sections" autocomplete="off">
+      </div>
+      <p class="docs-nav-empty">No section matches.</p>
+
+      <div class="docs-nav-group">
+        <p>Get started</p>
+        <a href="#introduction">Introduction</a>
+        <a href="#installation">Installation</a>
+        <a href="#quickstart-host">Quickstart · Host</a>
+        <a href="#quickstart-teammate">Quickstart · Teammate</a>
+        <a href="#first-run">Your first coordinated write</a>
+      </div>
+
+      <div class="docs-nav-group">
+        <p>Core concepts</p>
+        <a href="#concept-locking">File locking</a>
+        <a href="#concept-depgraph">Dependency-graph locking</a>
+        <a href="#concept-room">Rooms &amp; the host model</a>
+        <a href="#concept-sync">Patch sync</a>
+      </div>
+
+      <div class="docs-nav-group">
+        <p>Reference</p>
+        <a href="#cli">CLI reference</a>
+        <a href="#hooks">Agent hooks</a>
+        <a href="#mcp">MCP server</a>
+        <a href="#mission-control">Mission Control</a>
+        <a href="#api">HTTP API</a>
+        <a href="#configuration">Configuration</a>
+      </div>
+
+      <div class="docs-nav-group">
+        <p>Operations</p>
+        <a href="#troubleshooting">Troubleshooting</a>
+        <a href="#faq">FAQ</a>
+      </div>
+    </aside>
+
+    <!-- ================================================== ARTICLE ===== -->
+    <article class="docs-article">
+
+      <!-- ---------------------------------------------- introduction -- -->
+      <section id="introduction">
+        <p class="docs-kicker">Documentation · v0.1.0</p>
+        <h1>/.relay docs</h1>
+        <p class="lead">/.relay is the coordination layer for AI coding agents. Claude Code, Cursor, Copilot, Codex and Antigravity all write to the same files and none of them know the others exist. /.relay gives them one shared lock table, a dependency-aware view of the blast radius, and live patch sync across every machine on the team.</p>
+
+        <p>Everything on this page runs on your own hardware. There is no hosted backend, no database, and no account server — one person on the team runs <code>relay serve</code> and that machine <em>is</em> the server.</p>
+
+        <div class="code-block" data-lang="diff">
+          <div class="code-block-head"><span class="dot"></span><span class="label">the shift</span><span class="lang">diff</span></div>
+<pre><code>- 12 agents · 12 blind writers · conflicts discovered at merge
++ 12 agents · 1 lock table   · conflicts prevented at the edit</code></pre>
+        </div>
+
+        <h3 id="introduction-map">What is in here</h3>
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead><tr><th>If you want to…</th><th>Go to</th></tr></thead>
+            <tbody>
+              <tr><td>Install the CLI and run it for the first time</td><td><a href="#installation">Installation</a> → <a href="#quickstart-host">Quickstart</a></td></tr>
+              <tr><td>Understand what a lock actually guards</td><td><a href="#concept-locking">Core concepts</a></td></tr>
+              <tr><td>Look up a command and its flags</td><td><a href="#cli">CLI reference</a></td></tr>
+              <tr><td>Wire a specific agent into the claim/release cycle</td><td><a href="#hooks">Agent hooks</a></td></tr>
+              <tr><td>Read room context from an MCP client</td><td><a href="#mcp">MCP server</a></td></tr>
+              <tr><td>Fix an empty board or a broken room</td><td><a href="#troubleshooting">Troubleshooting</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout callout-note">
+          <span class="callout-mark">Note</span>
+          <p>Reading order matters less than you would think — the quickstart is four commands. If you are impatient, jump to <a href="#quickstart-host">Quickstart · Host</a> and come back for the concepts once something is locked.</p>
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------- installation -- -->
+      <section id="installation">
+        <p class="docs-kicker">Get started</p>
+        <h2>Installation</h2>
+        <p>/.relay is a Node CLI plus a local API and a Next.js board. Everything ships in one repository, so installing means cloning it and linking the CLI onto your <code>PATH</code>.</p>
+
+        <h3 id="installation-requirements">Requirements</h3>
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead><tr><th>Status</th><th>What</th><th>Why</th></tr></thead>
+            <tbody>
+              <tr><td>Required</td><td>Node.js 18+ (20+ recommended), npm</td><td>Runs the CLI, the API, and Mission Control</td></tr>
+              <tr><td>Required</td><td>git</td><td><code>relay clone</code> shells out to it</td></tr>
+              <tr><td>Optional</td><td><code>gh</code> CLI</td><td>Fastest path for <code>relay login</code></td></tr>
+              <tr><td>Optional</td><td>ngrok</td><td>Only needed for cross-machine rooms</td></tr>
+              <tr><td>Not needed</td><td>MongoDB, Redis, Docker, a hosted backend, an account</td><td>State lives in files on your disk</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 id="installation-install">Install the CLI</h3>
+        <div class="code-block" data-lang="bash">
+          <div class="code-block-head"><span class="dot"></span><span class="label">terminal</span><span class="lang">bash</span></div>
+<pre><code>$ git clone https://github.com/prakrititz/relayBrain
+$ cd relayBrain
+$ npm install                # deps for the CLI, API and Mission Control
+$ npm link                   # puts `relay` on your PATH</code></pre>
+        </div>
+
+        <p>Confirm the binary resolves:</p>
+
+        <div class="code-block" data-lang="bash">
+          <div class="code-block-head"><span class="dot"></span><span class="label">terminal</span><span class="lang">bash</span></div>
+<pre><code>$ relay help</code></pre>
+        </div>
+
+        <div class="code-block" data-lang="output">
+          <div class="code-block-head"><span class="dot"></span><span class="label">output</span><span class="lang">console</span></div>
+<pre><code>Relay — GitHub Desktop for AI agents
+
+  relay login              Sign in with GitHub (uses gh CLI, or device flow if GITHUB_CLIENT_ID is set)
+  relay logout             Clear the local session
+  relay whoami             Show the signed-in GitHub user
+  relay clone &lt;url&gt; [dir]  git clone + register workspace + install agent hooks
+  relay add &lt;path&gt;         Attach an existing local repo
+  relay serve              Start API on 127.0.0.1:3001 and Mission Control on :3002
+  relay serve --no-ui      Start API + coordinator only
+  relay push               Send your dirty working-tree files to the shared room
+  relay pull               Apply the host's current dirty files onto this clone
+  relay status             Health check
+  relay mcp-url            Print the MCP config for this room's shared context endpoint
+  relay doctor             Why the Coordinator board is empty</code></pre>
+        </div>
+
+        <div class="callout callout-warn">
+          <span class="callout-mark">Heads up</span>
+          <p><code>npm link</code> writes a global symlink. If your Node install lives under a system path you may need elevated permissions, or an nvm/fnm-managed Node — which is the friendlier option.</p>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------- quickstart host -- -->
+      <section id="quickstart-host">
+        <p class="docs-kicker">Get started</p>
+        <h2>Quickstart · Host</h2>
+        <p>The host is the machine that owns the lock table. Exactly one person on the team is the host; everyone else is a guest. Four commands and you are live.</p>
+
+        <div class="step-track">
+          <div class="step-item">
+            <h3>Sign in with GitHub</h3>
+            <p>Locks are attributed to a GitHub identity, so the board can say <em>@pony holds this file</em> rather than <em>agent-4f2 holds this file</em>.</p>
+            <div class="code-block" data-lang="bash">
+<pre><code>$ relay login</code></pre>
+            </div>
+            <p>This reuses the <code>gh</code> CLI session. If <code>gh</code> is not installed, set <code>GITHUB_CLIENT_ID</code> and /.relay falls back to the GitHub device flow.</p>
+          </div>
+
+          <div class="step-item">
+            <h3>Bring a repository under /.relay</h3>
+            <p>Cloning <em>through</em> relay clones the repo, registers the workspace, and installs the claim/release hooks for every supported agent in one shot.</p>
+            <div class="code-block" data-lang="bash">
+<pre><code>$ relay clone &lt;repo-url&gt; [dir]</code></pre>
+            </div>
+            <p>Already have the repo on disk? Attach it in place instead — same hook install, no re-clone:</p>
+            <div class="code-block" data-lang="bash">
+<pre><code>$ relay add /path/to/repo</code></pre>
+            </div>
+          </div>
+
+          <div class="step-item">
+            <h3>Start the relay</h3>
+            <div class="code-block" data-lang="bash">
+<pre><code>$ relay serve                # API → 127.0.0.1:3001 · Mission Control → :3002
+$ relay serve --no-ui        # API + coordinator only, no board</code></pre>
+            </div>
+            <p>Mission Control is a Next.js dev server; the CLI waits for <code>/api/health</code> to answer before booting it, and shuts both down together on <kbd>Ctrl-C</kbd>.</p>
+          </div>
+
+          <div class="step-item">
+            <h3>Mint the invite link</h3>
+            <p>Open <a href="http://localhost:3002" target="_blank" rel="noopener">localhost:3002</a> → <strong>Team → Share</strong>. /.relay opens an ngrok tunnel to your machine and hands you a link. That link, plus the member token baked into it, is the whole room.</p>
+          </div>
+        </div>
+
+        <div class="callout callout-tip">
+          <span class="callout-mark">Tip</span>
+          <p>Nothing else to remember. Once hooks are installed, agents claim and release locks on their own — no one on the team ever types a lock command.</p>
+        </div>
+      </section>
+
+      <!-- --------------------------------------- quickstart teammate -- -->
+      <section id="quickstart-teammate">
+        <p class="docs-kicker">Get started</p>
+        <h2>Quickstart · Teammate</h2>
+        <p>Guests run their own relay against their own filesystem. They do not share a working tree with the host — they share a lock table and a patch stream.</p>
+
+        <div class="code-block" data-lang="bash">
+          <div class="code-block-head"><span class="dot"></span><span class="label">teammate</span><span class="lang">bash</span></div>
+<pre><code>$ relay login                     # their own GitHub identity
+$ relay clone &lt;same-repo-url&gt;     # their own clone
+$ relay serve                     # their own local relay
+# then: Mission Control → Team → Join, paste the host's invite link
+$ relay pull                      # take the host's current working state</code></pre>
+        </div>
+
+        <p>From that point on, the two machines see one lock table. A claim on the guest's machine is arbitrated against the host over the tunnel, and the board mirrors the host's locks back down.</p>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead><tr><th>Role</th><th>Owns</th><th>Board is fed by</th></tr></thead>
+            <tbody>
+              <tr><td>Host</td><td>The canonical lock table</td><td>Its own local table</td></tr>
+              <tr><td>Guest</td><td>Its own clone and agents</td><td>The lock mirror polling the host</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout callout-warn">
+          <span class="callout-mark">Warning</span>
+          <p>If the host's tunnel dies, locks still arbitrate correctly on the machines that can reach it — the board is what degrades first. <a href="#troubleshooting"><code>relay doctor</code></a> walks that chain and names the broken link.</p>
+        </div>
+      </section>
+
+      <!-- ----------------------------------------------- first write -- -->
+      <section id="first-run">
+        <p class="docs-kicker">Get started</p>
+        <h2>Your first coordinated write</h2>
+        <p>Open your agent as you normally would and ask it to edit a file. Nothing about your workflow changes — the hooks fire underneath.</p>
+
+        <div class="code-block" data-lang="output">
+          <div class="code-block-head"><span class="dot"></span><span class="label">relay status</span><span class="lang">console</span></div>
+<pre><code>lock table — 4 held
+├── src/auth/session.ts   # @pony   · claude  · write
+├── src/api/routes.ts     # @unnath · cursor  · write
+├── lib/db/client.ts      # @arjun  · codex   · write
+└── ui/Header.tsx         # @pony   · copilot · write
+    └── dep-blocked: ui/Nav.tsx, ui/Layout.tsx</code></pre>
+        </div>
+
+        <p>Now have a second agent try the same file. Instead of a silent overwrite discovered three hours later at the merge, the write is <strong>refused at the edit</strong> and the agent is told who holds it.</p>
+
+        <p>Confirm the whole chain is healthy at any time:</p>
+
+        <div class="code-block" data-lang="bash">
+<pre><code>$ relay doctor</code></pre>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------ concept: locking -- -->
+      <section id="concept-locking">
+        <p class="docs-kicker">Core concepts</p>
+        <h2>File locking</h2>
+        <p>Every agent write goes through a claim/release cycle against a shared, TTL-based lock table. A <strong>pre-tool hook</strong> fires before the agent touches a file and claims it. A <strong>post-tool hook</strong> fires after and releases it. If another agent holds the file, the claim fails and the write never lands.</p>
+
+        <div class="code-block" data-lang="text">
+          <div class="code-block-head"><span class="dot"></span><span class="label">write lifecycle</span><span class="lang">text</span></div>
+<pre><code>agent wants to write src/auth/session.ts
+        │
+        ├─ pre-tool hook ──► POST /api/locks/claim
+        │                       ├─ free?          → granted, TTL starts
+        │                       ├─ held by other? → REFUSED (+ holder identity)
+        │                       └─ dep-affected?  → REFUSED (+ blast radius)
+        │
+        ├─ the edit runs
+        │
+        └─ post-tool hook ─► POST /api/locks/release
+                                └─ change fans out as a patch to the room</code></pre>
+        </div>
+
+        <p>Locks are TTL-based and auto-expire, so a crashed agent or a killed terminal cannot wedge a file permanently. Hooks call the host <em>directly</em> over HTTP — arbitration never depends on the board being up.</p>
+      </section>
+
+      <!-- ----------------------------------------- concept: depgraph -- -->
+      <section id="concept-depgraph">
+        <p class="docs-kicker">Core concepts</p>
+        <h2>Dependency-graph locking</h2>
+        <p>Files do not exist independently. Editing one module can break a dozen importers, so path-exact locking is not enough. /.relay parses imports with tree-sitter and asks the real question: <em>does this change affect a file another agent is working on?</em> — not merely <em>is this exact path locked?</em></p>
+
+        <p>Agents stay parallel wherever the graph says they are independent. The blast radius is what gets serialized.</p>
+
+        <h3 id="concept-depgraph-languages">Languages parsed</h3>
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead><tr><th>Family</th><th>Languages</th></tr></thead>
+            <tbody>
+              <tr><td>Web</td><td>TypeScript, JavaScript</td></tr>
+              <tr><td>Systems</td><td>Go, Rust, C, C++</td></tr>
+              <tr><td>JVM / .NET</td><td>Java, C#</td></tr>
+              <tr><td>Scripting</td><td>Python, PHP, Ruby</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout callout-note">
+          <span class="callout-mark">Note</span>
+          <p>The graph is rebuilt from the working tree, not from a hosted index. A file in a language outside this list still locks exactly — it just does not contribute edges to the blast radius.</p>
+        </div>
+      </section>
+
+      <!-- --------------------------------------------- concept: room -- -->
+      <section id="concept-room">
+        <p class="docs-kicker">Core concepts</p>
+        <h2>Rooms &amp; the host model</h2>
+        <p>A <strong>room</strong> is one host machine plus the guests connected to it. There is no cloud component: <code>relay serve</code> binds the API to <code>127.0.0.1:3001</code>, and sharing means opening an ngrok tunnel straight to that laptop.</p>
+
+        <div class="code-block" data-lang="text">
+          <div class="code-block-head"><span class="dot"></span><span class="label">topology</span><span class="lang">text</span></div>
+<pre><code>  Cursor ──┐  pre-tool hook: claim
+  Claude ──┤  post-tool hook: release      ┌──────────────┐
+  Copilot ─┼──► lock table ◄── dep graph ──│ relay serve  │──► Mission Control
+  Codex ───┤        ▲                      │  (your host) │          ▲
+  Antigravity ┘     │                      └──────┬───────┘          │
+                    │       ngrok tunnel          │                  │
+              teammate's relay ◄──── patches ─────┴──────────────────┘</code></pre>
+        </div>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead><tr><th>Layer</th><th>Who runs it</th><th>What it guards</th></tr></thead>
+            <tbody>
+              <tr><td>Claim / release</td><td>pre- and post-tool hooks</td><td>Exclusive write access to a file</td></tr>
+              <tr><td>Dependency graph</td><td>tree-sitter import scan</td><td>Files <em>affected by</em> the edit</td></tr>
+              <tr><td>Room</td><td><code>relay serve</code> + ngrok tunnel</td><td>One shared lock table across machines</td></tr>
+              <tr><td>Patches</td><td><code>relay push</code> / <code>relay pull</code></td><td>Working-tree state without full copies</td></tr>
+              <tr><td>Board</td><td>Mission Control (<code>:3002</code>)</td><td>Who holds what, right now</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>Room state is written to <code>room.json</code> and carries the role (<code>host</code> or <code>guest</code>), the tunnel URL, the host project id, and a member token for invite-only rooms.</p>
+      </section>
+
+      <!-- --------------------------------------------- concept: sync -- -->
+      <section id="concept-sync">
+        <p class="docs-kicker">Core concepts</p>
+        <h2>Patch sync</h2>
+        <p>Your teammate has their own filesystem, their own environment, and their own agents. /.relay does not copy projects around — it propagates <strong>patches of the dirty working tree</strong>, so both clones converge on the same uncommitted state without anyone committing.</p>
+
+        <div class="code-block" data-lang="bash">
+          <div class="code-block-head"><span class="dot"></span><span class="label">terminal</span><span class="lang">bash</span></div>
+<pre><code>$ relay push     # send your dirty working-tree files to the room
+$ relay pull     # apply the host's current dirty files onto this clone</code></pre>
+        </div>
+
+        <div class="code-block" data-lang="output">
+          <div class="code-block-head"><span class="dot"></span><span class="label">output</span><span class="lang">console</span></div>
+<pre><code>push 3 file(s)
+  src/auth/session.ts
+  src/api/routes.ts
+  lib/db/client.ts</code></pre>
+        </div>
+
+        <p>Both commands are thin clients over the local API — if the relay is not running you get <code>offline — run relay serve</code> and a non-zero exit code, which makes them safe to use in scripts.</p>
+      </section>
+
+      <!-- ------------------------------------------------------- CLI -- -->
+      <section id="cli">
+        <p class="docs-kicker">Reference</p>
+        <h2>CLI reference</h2>
+        <p>Every command /.relay ships. Expand one for usage, output, and the failure modes worth knowing.</p>
+
+        <h3 id="cli-identity">Identity</h3>
+
+        <details class="cmd-entry">
+          <summary><code class="cmd-name">relay login</code><span class="cmd-desc">Sign in with GitHub</span></summary>
+          <div class="cmd-body">
+            <p>Reads the existing <code>gh</code> CLI session and stores a local /.relay session. Locks and board entries are attributed to this identity.</p>
+            <div class="code-block" data-lang="bash"><pre><code>$ relay login</code></pre></div>
+            <div class="code-block" data-lang="output"><pre><code>signed in as Krishna V (@pony) via GitHub CLI</code></pre></div>
+            <p><strong>No <code>gh</code> installed?</strong> Set <code>GITHUB_CLIENT_ID</code> (and <code>GITHUB_CLIENT_SECRET</code>) and the command falls back to the GitHub device flow, printing a verification URL and a one-time code. You can also sign in from Mission Control with <strong>Continue with GitHub</strong>.</p>
+          </div>
+        </details>
+
+        <details class="cmd-entry">
+          <summary><code class="cmd-name">relay whoami</code><span class="cmd-desc">Show the signed-in user</span></summary>
+          <div class="cmd-body">
+            <div class="code-block" data-lang="bash"><pre><code>$ relay whoami</code></pre></div>
+            <div class="code-block" data-lang="output"><pre><code>Krishna V (@pony)
+project prj_8f31a2</code></pre></div>
+            <p>Exits non-zero with <code>not signed in — run relay login</code> when there is no session.</p>
+          </div>
+        </details>
+
+        <details class="cmd-entry">
+          <summary><code class="cmd-name">relay logout</code><span class="cmd-desc">Clear the local session</span></summary>
+          <div class="cmd-body">
+            <div class="code-block" data-lang="bash"><pre><code>$ relay logout</code></pre></div>
+            <p>Removes the stored session only. Your <code>gh</code> credentials are untouched.</p>
+          </div>
+        </details>
+
+        <h3 id="cli-workspaces">Workspaces</h3>
+
+        <details class="cmd-entry">
+          <summary><code class="cmd-name">relay clone &lt;url&gt; [dir]</code><span class="cmd-desc">Clone + register + install hooks</span></summary>
+          <div class="cmd-body">
+            <p>Three steps in one: <code>git clone</code>, register the workspace as a /.relay project, and install pre-tool, post-tool, pre-read and stop hooks for every supported agent.</p>
+            <div class="code-block" data-lang="bash"><pre><code>$ relay clone https://github.com/acme/api-server
+$ relay clone https://github.com/acme/api-server ./api</code></pre></div>
+            <div class="code-block" data-lang="output"><pre><code>cloned https://github.com/acme/api-server
+workspace /Users/pony/code/api-server
+registered api-server (prj_8f31a2)</code></pre></div>
+          </div>
+        </details>
+
+        <details class="cmd-entry">
+          <summary><code class="cmd-name">relay add &lt;path&gt;</code><span class="cmd-desc">Attach an existing local repo</span></summary>
+          <div class="cmd-body">
+            <p>Same registration and hook install as <code>clone</code>, without touching git. Use this for a repo you already have on disk.</p>
+            <div class="code-block" data-lang="bash"><pre><code>$ relay add ~/code/api-server</code></pre></div>
+            <div class="code-block" data-lang="output"><pre><code>added /Users/pony/code/api-server as api-server</code></pre></div>
+          </div>
+        </details>
+
+        <h3 id="cli-runtime">Runtime</h3>
+
+        <details class="cmd-entry" open>
+          <summary><code class="cmd-name">relay serve</code><span class="cmd-desc">Start the API and Mission Control</span></summary>
+          <div class="cmd-body">
+            <p>Boots the coordination API on <code>127.0.0.1:3001</code>, waits for <code>/api/health</code>, then starts Mission Control on <code>:3002</code>. Both processes shut down together on <kbd>Ctrl-C</kbd>, including their child process trees on Windows.</p>
+            <div class="code-block" data-lang="bash">
+<pre><code>$ relay serve                    # API + Mission Control
+$ relay serve --no-ui            # API + coordinator only
+$ relay serve --port 4001        # move the API off 3001</code></pre>
+            </div>
+            <div class="docs-table-wrap">
+              <table class="docs-table">
+                <thead><tr><th>Flag</th><th>Effect</th></tr></thead>
+                <tbody>
+                  <tr><td><code>--no-ui</code></td><td>Skip Mission Control; run the API and coordinator only</td></tr>
+                  <tr><td><code>--port &lt;n&gt;</code></td><td>API port (overrides <code>RELAY_PORT</code>, default <code>3001</code>)</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p>The board port comes from <code>RELAY_UI_PORT</code> (default <code>3002</code>). If <code>next</code> is missing you will get <code>Mission Control is not installed — run npm install</code>.</p>
+          </div>
+        </details>
+
+        <details class="cmd-entry">
+          <summary><code class="cmd-name">relay status</code><span class="cmd-desc">Health check as JSON</span></summary>
+          <div class="cmd-body">
+            <p>Prints the raw <code>/api/health</code> payload — room, role, host, and ports.</p>
+            <div class="code-block" data-lang="bash"><pre><code>$ relay status</code></pre></div>
+            <div class="code-block" data-lang="json">
+<pre><code>{
+  "ok": true,
+  "port": 3001,
+  "room": {
+    "role": "host",
+    "url": "https://a1b2c3.ngrok-free.app",
+    "hostProjectId": "prj_8f31a2",
+    "hostProjectName": "api-server",
+    "hostWorkspacePath": "/Users/pony/code/api-server"
+  }
+}</code></pre>
+            </div>
+            <p>Exits non-zero with <code>offline — run relay serve</code> when no local API answers.</p>
+          </div>
+        </details>
+
+        <h3 id="cli-sync">Sync</h3>
+
+        <details class="cmd-entry">
+          <summary><code class="cmd-name">relay push</code><span class="cmd-desc">Send dirty files to the room</span></summary>
+          <div class="cmd-body">
+            <div class="code-block" data-lang="bash"><pre><code>$ relay push</code></pre></div>
+            <div class="code-block" data-lang="output"><pre><code>push 2 file(s)
+  src/api/routes.ts
+  lib/db/client.ts</code></pre></div>
+            <p>Prints <code>push: nothing to push</code> when the working tree is clean.</p>
+          </div>
+        </details>
+
+        <details class="cmd-entry">
+          <summary><code class="cmd-name">relay pull</code><span class="cmd-desc">Apply the host's working state</span></summary>
+          <div class="cmd-body">
+            <div class="code-block" data-lang="bash"><pre><code>$ relay pull</code></pre></div>
+            <div class="code-block" data-lang="output"><pre><code>pull 3 file(s)
+  src/auth/session.ts
+  src/api/routes.ts
+  ui/Header.tsx</code></pre></div>
+            <p>Patches land on your clone — no whole-project copy, no commit required on either side.</p>
+          </div>
+        </details>
+
+        <h3 id="cli-diagnostics">Diagnostics &amp; integration</h3>
+
+        <details class="cmd-entry">
+          <summary><code class="cmd-name">relay doctor</code><span class="cmd-desc">Explain an empty Coordinator board</span></summary>
+          <div class="cmd-body">
+            <p>Locks and the board are separate subsystems — hooks arbitrate straight against the host over HTTP, while the board is fed by a lock mirror and SSE. That makes <em>"locking works but I see nothing"</em> a normal and otherwise invisible failure. <code>doctor</code> walks that exact chain and names the broken link.</p>
+            <div class="code-block" data-lang="bash"><pre><code>$ relay doctor
+$ relay doctor --port 4001</code></pre></div>
+            <div class="code-block" data-lang="output">
+              <div class="code-block-head"><span class="dot"></span><span class="label">healthy guest</span><span class="lang">console</span></div>
+<pre><code>relay doctor — room + Coordinator board
+
+  ok    local API on http://127.0.0.1:3001
+  ok    room joined as guest -> https://a1b2c3.ngrok-free.app
+  ok    mirroring host project prj_8f31a2
+  ok    host answers through the tunnel
+  ok    host reports 4 lock(s) for the shared project
+
+  board would render 4 lock(s):
+        3 mirrored from the room, 1 claimed on this machine
+        src/auth/session.ts  @pony  write</code></pre>
+            </div>
+            <p>Run it on the machine that sees nothing — not on the host.</p>
+          </div>
+        </details>
+
+        <details class="cmd-entry">
+          <summary><code class="cmd-name">relay mcp-url</code><span class="cmd-desc">Print the room's MCP config</span></summary>
+          <div class="cmd-body">
+            <p>Emits a ready-to-paste <code>mcpServers</code> block pointing at this room's shared-context endpoint. See <a href="#mcp">MCP server</a>.</p>
+            <div class="code-block" data-lang="bash"><pre><code>$ relay mcp-url</code></pre></div>
+            <p>Exits non-zero with a hint when you are not in a room — locally your agents already reach relay over stdio, so there is nothing to configure.</p>
+          </div>
+        </details>
+
+        <details class="cmd-entry">
+          <summary><code class="cmd-name">relay help</code><span class="cmd-desc">Full command list</span></summary>
+          <div class="cmd-body">
+            <div class="code-block" data-lang="bash"><pre><code>$ relay help
+$ relay -h
+$ relay --help</code></pre></div>
+          </div>
+        </details>
+
+        <h3 id="cli-cheatsheet">Cheat sheet</h3>
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead><tr><th>Command</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>relay login</code></td><td>GitHub identity via <code>gh</code>, or device flow with <code>GITHUB_CLIENT_ID</code></td></tr>
+              <tr><td><code>relay logout</code></td><td>Clear the local session</td></tr>
+              <tr><td><code>relay whoami</code></td><td>Show the signed-in GitHub user and active project</td></tr>
+              <tr><td><code>relay clone &lt;url&gt; [dir]</code></td><td>git clone + register workspace + install agent hooks</td></tr>
+              <tr><td><code>relay add &lt;path&gt;</code></td><td>Attach an existing local repo</td></tr>
+              <tr><td><code>relay serve</code></td><td>API on <code>127.0.0.1:3001</code> + Mission Control on <code>:3002</code></td></tr>
+              <tr><td><code>relay serve --no-ui</code></td><td>API + coordinator only</td></tr>
+              <tr><td><code>relay push</code></td><td>Send your dirty working-tree files to the room</td></tr>
+              <tr><td><code>relay pull</code></td><td>Apply the host's current dirty files onto this clone</td></tr>
+              <tr><td><code>relay status</code></td><td>Health check (room, role, host, ports)</td></tr>
+              <tr><td><code>relay mcp-url</code></td><td>Print the MCP config for this room's shared-context endpoint</td></tr>
+              <tr><td><code>relay doctor</code></td><td>Diagnose an empty Coordinator board</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ----------------------------------------------------- hooks -- -->
+      <section id="hooks">
+        <p class="docs-kicker">Reference</p>
+        <h2>Agent hooks</h2>
+        <p><code>relay clone</code> and <code>relay add</code> install four hooks into your project: <strong>pre-tool</strong> (claim), <strong>post-tool</strong> (release), <strong>pre-read</strong>, and <strong>stop</strong>. They are written into each agent's own config format, so every tool participates without a plugin.</p>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead><tr><th>Agent</th><th>Config file</th><th>Write tools intercepted</th></tr></thead>
+            <tbody>
+              <tr><td>Claude Code</td><td><code>.claude/settings.json</code></td><td><code>Edit</code>, <code>Write</code>, <code>NotebookEdit</code></td></tr>
+              <tr><td>Cursor</td><td><code>.cursor/hooks.json</code></td><td><code>Write</code>, <code>Edit</code>, <code>Delete</code></td></tr>
+              <tr><td>Codex</td><td><code>.codex/hooks.json</code></td><td><code>apply_patch</code>, <code>Edit</code>, <code>Write</code></td></tr>
+              <tr><td>Copilot CLI</td><td><code>.github/hooks/relay-os.json</code></td><td><code>edit</code>, <code>create</code></td></tr>
+              <tr><td>Antigravity</td><td><code>.agents/hooks.json</code></td><td><code>write_to_file</code>, <code>replace_file_content</code>, <code>multi_replace_file_content</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 id="hooks-verify">Verifying the install</h3>
+        <div class="code-block" data-lang="bash">
+<pre><code>$ ls -a .claude .cursor .codex .agents .github/hooks</code></pre>
+        </div>
+
+        <div class="callout callout-note">
+          <span class="callout-mark">Note</span>
+          <p>The hook files are committed alongside the repo, so a teammate who clones it normally still gets the claim/release wiring — they only need their own <code>relay serve</code> running for it to have something to talk to.</p>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------------------- MCP -- -->
+      <section id="mcp">
+        <p class="docs-kicker">Reference</p>
+        <h2>MCP server</h2>
+        <p>Any MCP client can read the room's shared context — <strong>even on a machine with no relay installed</strong>. Print the config and paste it into your agent:</p>
+
+        <div class="code-block" data-lang="bash">
+<pre><code>$ relay mcp-url</code></pre>
+        </div>
+
+        <div class="code-block" data-lang="json">
+          <div class="code-block-head"><span class="dot"></span><span class="label">mcp config</span><span class="lang">json</span></div>
+<pre><code>{
+  "mcpServers": {
+    "relay-room": {
+      "type": "http",
+      "url": "https://a1b2c3.ngrok-free.app/mcp",
+      "headers": {
+        "ngrok-skip-browser-warning": "relay",
+        "x-relay-room-token": "rmt_9f81…"
+      }
+    }
+  }
+}</code></pre>
+        </div>
+
+        <div class="callout callout-warn">
+          <span class="callout-mark">Scope</span>
+          <p>The room endpoint is <strong>read-only</strong> for anyone off the host machine. Coordination tools that mutate state — <code>relay_claim_file</code>, <code>relay_release_file</code>, <code>relay_status</code> — run against each member's own local relay.</p>
+        </div>
+
+        <h3 id="mcp-tools">Tools exposed</h3>
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead><tr><th>Tool</th><th>Purpose</th></tr></thead>
+            <tbody>
+              <tr><td><code>relay_claim_file</code></td><td>Acquire an exclusive write lock before editing</td></tr>
+              <tr><td><code>relay_release_file</code></td><td>Release the lock after editing</td></tr>
+              <tr><td><code>relay_status</code></td><td>View the full lock table</td></tr>
+              <tr><td><code>relay_get_conflicts</code></td><td>Overlapping edits in the last 5 minutes</td></tr>
+              <tr><td><code>relay_get_recent_changes</code></td><td>Recent <code>code_edit</code> events</td></tr>
+              <tr><td><code>relay_get_chat_history</code></td><td>Unified agent chat across every room member</td></tr>
+              <tr><td><code>relay_report_change</code></td><td>Push a code-change event</td></tr>
+              <tr><td><code>relay_report_decision</code> / <code>relay_get_decisions</code></td><td>Append / read decisions</td></tr>
+              <tr><td><code>relay_update_task</code> / <code>relay_get_active_tasks</code></td><td>Append / read tasks</td></tr>
+              <tr><td><code>relay_get_project_context</code></td><td>Full JSON project context</td></tr>
+              <tr><td><code>relay_sync</code></td><td>Re-read agent transcripts into unified history</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>If you are a guest and no member token is on file, re-join with the invite link — the host may have made the room invite-only.</p>
+      </section>
+
+      <!-- -------------------------------------------- mission control -- -->
+      <section id="mission-control">
+        <p class="docs-kicker">Reference</p>
+        <h2>Mission Control</h2>
+        <p>One board for every agent on every machine. Started by <code>relay serve</code>, running on your own hardware, with no hosted account behind it.</p>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead><tr><th>Surface</th><th>URL</th></tr></thead>
+            <tbody>
+              <tr><td>Dashboard</td><td><code>http://localhost:3002</code></td></tr>
+              <tr><td>API health</td><td><code>http://127.0.0.1:3001/api/health</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 id="mission-control-panels">Panels</h3>
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead><tr><th>Panel</th><th>What it shows</th></tr></thead>
+            <tbody>
+              <tr><td>File locks</td><td>Who holds what file, right now, with agent and mode</td></tr>
+              <tr><td>Lock graph</td><td>The dependency blast radius as a live canvas</td></tr>
+              <tr><td>Code edits</td><td>Recent <code>code_edit</code> events across the room</td></tr>
+              <tr><td>Agent chat</td><td>Unified session history from every agent on every machine</td></tr>
+              <tr><td>Activity timeline</td><td>Claims, releases, pushes and pulls in order</td></tr>
+              <tr><td>Team &amp; presence</td><td>Who is online, plus <strong>Share</strong> and <strong>Join</strong> for the room</td></tr>
+              <tr><td>Conflict notices</td><td>Overlapping edits surfaced within seconds</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------------------- API -- -->
+      <section id="api">
+        <p class="docs-kicker">Reference</p>
+        <h2>HTTP API</h2>
+        <p>The CLI is a thin client over a local HTTP API. Anything the CLI does, you can script.</p>
+
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead><tr><th>Endpoint</th><th>Method</th><th>Purpose</th></tr></thead>
+            <tbody>
+              <tr><td><code>/api/health</code></td><td>GET</td><td>Liveness, port, room role and host details</td></tr>
+              <tr><td><code>/api/locks</code></td><td>GET</td><td>The lock table this machine would render</td></tr>
+              <tr><td><code>/api/locks?projectId=…</code></td><td>GET</td><td>Locks for one shared project (used across the tunnel)</td></tr>
+              <tr><td><code>/api/push</code></td><td>POST</td><td>Send dirty working-tree files to the room</td></tr>
+              <tr><td><code>/api/pull</code></td><td>POST</td><td>Apply the host's dirty files onto this clone</td></tr>
+              <tr><td><code>/mcp</code></td><td>HTTP</td><td>Read-only room context for MCP clients</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="code-block" data-lang="bash">
+          <div class="code-block-head"><span class="dot"></span><span class="label">scripting the API</span><span class="lang">bash</span></div>
+<pre><code>$ curl -s http://127.0.0.1:3001/api/health
+$ curl -s http://127.0.0.1:3001/api/locks
+$ curl -s -X POST http://127.0.0.1:3001/api/push -d '{}'</code></pre>
+        </div>
+
+        <p>Requests that cross the tunnel to a host carry two headers: <code>ngrok-skip-browser-warning: relay</code> and, in invite-only rooms, <code>x-relay-room-token</code>.</p>
+      </section>
+
+      <!-- --------------------------------------------- configuration -- -->
+      <section id="configuration">
+        <p class="docs-kicker">Reference</p>
+        <h2>Configuration</h2>
+
+        <h3 id="configuration-env">Environment variables</h3>
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead><tr><th>Variable</th><th>Default</th><th>What it controls</th></tr></thead>
+            <tbody>
+              <tr><td><code>RELAY_PORT</code></td><td><code>3001</code></td><td>Coordination API port</td></tr>
+              <tr><td><code>RELAY_UI_PORT</code></td><td><code>3002</code></td><td>Mission Control port</td></tr>
+              <tr><td><code>RELAY_UI_ORIGIN</code></td><td><code>http://localhost:3002</code></td><td>Origin the API accepts board requests from (CORS)</td></tr>
+              <tr><td><code>GITHUB_CLIENT_ID</code></td><td>—</td><td>Enables the device-flow login fallback</td></tr>
+              <tr><td><code>GITHUB_CLIENT_SECRET</code></td><td>—</td><td>Pairs with the client id for Mission Control sign-in</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="code-block" data-lang="bash">
+          <div class="code-block-head"><span class="dot"></span><span class="label">moving off the default ports</span><span class="lang">bash</span></div>
+<pre><code>$ export RELAY_PORT=4001
+$ export RELAY_UI_PORT=4002
+$ export RELAY_UI_ORIGIN=http://localhost:4002
+$ relay serve</code></pre>
+        </div>
+
+        <h3 id="configuration-state">Where state lives</h3>
+        <p>There is no database. Everything is files on your own disk.</p>
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead><tr><th>File</th><th>Holds</th></tr></thead>
+            <tbody>
+              <tr><td><code>room.json</code></td><td>Role, tunnel URL, host project id and name, member token</td></tr>
+              <tr><td>Session store</td><td>The GitHub identity from <code>relay login</code></td></tr>
+              <tr><td>Project registry</td><td>Workspaces registered by <code>relay clone</code> / <code>relay add</code></td></tr>
+              <tr><td>Hook configs</td><td>Per-agent files listed under <a href="#hooks">Agent hooks</a></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 id="configuration-deps">Bundled dependencies</h3>
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead><tr><th>Area</th><th>Packages</th></tr></thead>
+            <tbody>
+              <tr><td>API &amp; coordination</td><td><code>express</code>, <code>cors</code>, <code>ws</code></td></tr>
+              <tr><td>Dependency graph</td><td><code>@vscode/tree-sitter-wasm</code></td></tr>
+              <tr><td>Mission Control</td><td><code>next</code>, <code>react</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------- troubleshooting -- -->
+      <section id="troubleshooting">
+        <p class="docs-kicker">Operations</p>
+        <h2>Troubleshooting</h2>
+        <p>Start here, always:</p>
+        <div class="code-block" data-lang="bash">
+<pre><code>$ relay doctor    # run it on the machine that sees nothing</code></pre>
+        </div>
+
+        <h3 id="troubleshooting-board">The board is empty but locking works</h3>
+        <p>Expected, and the single most common report. Hooks claim straight against the host over HTTP; the board is fed by a separate lock mirror. If the mirror is not committing its polls, locks stay correct while the board stays blank.</p>
+        <div class="code-block" data-lang="output">
+<pre><code>  BROKE the host holds locks but this machine mirrors none of them.
+        Locks still arbitrate correctly (hooks call the host directly); it is only
+        the board that is fed by the mirror. Restart `relay serve` here.</code></pre>
+        </div>
+
+        <h3 id="troubleshooting-common">Common failures</h3>
+        <div class="docs-table-wrap">
+          <table class="docs-table">
+            <thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><code>offline — run relay serve</code></td>
+                <td>No local API on the expected port</td>
+                <td>Start <code>relay serve</code>, or match <code>RELAY_PORT</code></td>
+              </tr>
+              <tr>
+                <td><code>no local API on http://127.0.0.1:3001</code></td>
+                <td>Same, seen from <code>doctor</code></td>
+                <td>Run <code>relay serve</code> on <em>this</em> machine</td>
+              </tr>
+              <tr>
+                <td><code>room.json has no hostProjectId</code></td>
+                <td>Joined without a complete invite</td>
+                <td>Re-join with the host's invite link</td>
+              </tr>
+              <tr>
+                <td><code>cannot reach the host</code></td>
+                <td>Tunnel down or rotated</td>
+                <td>Host re-shares; /.relay looks up the current tunnel and reconnects</td>
+              </tr>
+              <tr>
+                <td><code>host refused /api/locks</code></td>
+                <td>Missing member token in an invite-only room</td>
+                <td>Re-join with the invite link to store the token</td>
+              </tr>
+              <tr>
+                <td><code>Mission Control is not installed</code></td>
+                <td><code>next</code> not present in <code>node_modules</code></td>
+                <td><code>npm install</code> at the repo root</td>
+              </tr>
+              <tr>
+                <td><code>Install GitHub CLI and run: gh auth login</code></td>
+                <td>No <code>gh</code> session and no <code>GITHUB_CLIENT_ID</code></td>
+                <td>Install <code>gh</code>, or set the client id for device flow</td>
+              </tr>
+              <tr>
+                <td>No agent ever claims a lock</td>
+                <td>Hooks not installed in that workspace</td>
+                <td>Run <code>relay add &lt;path&gt;</code> on the repo</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 id="troubleshooting-ports">Port already in use</h3>
+        <div class="code-block" data-lang="bash">
+<pre><code>$ relay serve --port 4001                    # API only
+$ RELAY_UI_PORT=4002 relay serve --port 4001  # both, plus set RELAY_UI_ORIGIN</code></pre>
+        </div>
+
+        <div class="callout callout-tip">
+          <span class="callout-mark">Tip</span>
+          <p>An empty board with nothing locked anywhere is <em>correct</em>. Have someone start an agent edit and run <code>relay doctor</code> again before assuming something is broken.</p>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------------------- FAQ -- -->
+      <section id="faq">
+        <p class="docs-kicker">Operations</p>
+        <h2>FAQ</h2>
+
+        <h3 id="faq-account">Do I need an account?</h3>
+        <p>No. <code>relay login</code> reads a GitHub identity so locks can be attributed to a person, but there is no /.relay account server, no sign-up, and no hosted state.</p>
+
+        <h3 id="faq-branch">Does this replace Git?</h3>
+        <p>No — it sits under it. Git coordinates humans committing minutes apart. /.relay coordinates agents editing the same files right now. You still branch, commit and merge exactly as before.</p>
+
+        <h3 id="faq-offline">What happens if the host goes offline?</h3>
+        <p>Guests keep their own local relay and their own clone. Claims that need the host will fail loudly rather than silently succeed, and the board falls back to local locks until the tunnel is back.</p>
+
+        <h3 id="faq-language">My language is not in the dependency-graph list.</h3>
+        <p>File locking still works exactly the same — every write is claimed and released. Only the blast-radius edges are missing, so /.relay will not know that editing your file affects someone else's.</p>
+
+        <h3 id="faq-roadmap">What is next?</h3>
+        <ul>
+          <li><strong>Git worktree isolation</strong> — every agent in its own workspace off the same repository, free to experiment and test independently, integrated back into main when the work is ready.</li>
+          <li><strong>Richer conflict resolution</strong> on top of the existing OT / patch layer.</li>
+        </ul>
+
+        <div class="docs-pager">
+          <a href="how-it-works.html">
+            <span>Deeper</span><strong>How it works — the full architecture ↗</strong>
+          </a>
+          <a href="https://github.com/prakrititz/relayBrain" target="_blank" rel="noopener">
+            <span>Source</span><strong>github.com/prakrititz/relayBrain ↗</strong>
+          </a>
+        </div>
+      </section>
+
+    </article>
+
+    <!-- ===================================================== RAIL ===== -->
+    <nav class="docs-rail" aria-label="On this page">
+      <p>On this page</p>
+      <div id="docs-rail"></div>
+    </nav>
+
+  </div>
+
+  <footer class="footer shell">
+    <a class="wordmark" href="index.html"><img src="logo.png" alt="" class="inline-logo" /> /.relay</a>
+    <p>The coordination layer for AI agents.</p>
+    <p>© 2026 /.relay</p>
+  </footer>
+
+  <script src="docs.js"></script>
+</body>
+</html>
