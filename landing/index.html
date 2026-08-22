@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="/.relay gives every AI coding tool on your team one shared memory.">
-  <title>/.relay - Shared memory for AI teams</title>
+  <meta name="description" content="/.relay is the coordination layer for AI coding agents — file locks, dependency-aware locking, and live patch sync across every machine on your team.">
+  <title>/.relay - GitHub Desktop for AI agents</title>
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,7 +18,7 @@
       <a class="wordmark" href="#top" aria-label="/.relay home"><img src="logo.png" alt="" class="inline-logo" /> /.relay</a>
       <div class="nav-links">
         <a href="#demo">Watch the demo</a>
-        <a href="#how-it-works">How it works</a>
+        <a href="how-it-works.html">How it works</a>
         <a href="https://github.com/prakrititz/relayBrain" target="_blank">Try now for free <span aria-hidden="true">↗</span></a>
       </div>
     </nav>
@@ -27,15 +27,16 @@
   <main id="top">
     <section class="hero shell">
       <div class="hero-copy">
-        <p class="eyebrow"><span class="status-dot"></span> Shared memory for AI teams</p>
-        <h1>Your AI knows what you know.<br><span>Now it knows what your team knows.</span></h1>
-        <p class="hero-subtitle">Claude Code, Cursor, Copilot, Codex, Antigravity. Bring whatever you use. /.relay makes every AI on your team share one brain.</p>
+        <p class="eyebrow"><span class="status-dot"></span> The coordination layer for AI agents</p>
+        <h1>Twelve agents.<br><span>One repository. Zero collisions.</span></h1>
+        <p class="hero-subtitle">Claude Code, Cursor, Copilot, Codex, Antigravity — running in parallel, on four machines, writing to the same files. /.relay locks, resolves, and syncs between them. GitHub Desktop for AI agents.</p>
         <div class="hero-actions">
           <a class="button" href="https://github.com/prakrititz/relayBrain" target="_blank">Try now for free <span aria-hidden="true">↗</span></a>
+          <a class="button" href="how-it-works.html">See how it works</a>
         </div>
       </div>
 
-      <div class="network" aria-label="Antigravity, Claude Code, Cursor, Codex, and GitHub Copilot connected to one shared brain">
+      <div class="network" aria-label="Antigravity, Claude Code, Cursor, Codex, and GitHub Copilot coordinating through one shared lock table">
         <div class="network-grid" aria-hidden="true"></div>
         <svg class="network-lines" aria-hidden="true">
           <path data-connector="antigravity"></path>
@@ -78,13 +79,13 @@
             <span style="font-size: 11px; color: rgba(255, 255, 255, 0.8);">/.relay</span>
           </div>
         </div>
-        <p class="network-caption">Five tools. One source of truth.</p>
+        <p class="network-caption">Every write goes through one lock table.</p>
       </div>
 
       <div class="stream-wrap">
         <div class="stream-heading">
-          <p class="eyebrow"><span class="status-dot"></span> Live workspace</p>
-          <span>3 members online</span>
+          <p class="eyebrow"><span class="status-dot"></span> Live coordination</p>
+          <span>3 machines · 7 agents</span>
         </div>
         <div class="stream" id="memory-stream" aria-live="polite"></div>
       </div>
@@ -92,7 +93,6 @@
 
     <section class="demo shell section" id="demo" style="padding-top: 0; padding-bottom: 100px; border-top: none;">
       <div class="video-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; background: #050505; box-shadow: 0 30px 60px rgba(0,0,0,0.8);">
-        <!-- Replace 'YOUR_VIDEO_ID' with the actual YouTube video ID -->
         <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="https://www.youtube.com/embed/igQ_ZW0ZRUM?rel=0&showinfo=0" title="/.relay Demo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
       </div>
     </section>
@@ -100,176 +100,180 @@
     <section class="problem shell section">
       <div class="section-index">01 / The problem</div>
       <div class="problem-copy">
-        <h2>Every agent speaks<br>a different language.</h2>
+        <h2>They all write<br>to the same files.</h2>
         <div class="body-copy">
-          <p>Claude reads <code>CLAUDE.md</code>. Codex reads <code>AGENTS.md</code>. Cursor reads its own rules. Copilot wants another file. Antigravity stores artifacts somewhere else.</p>
-          <p>You explain the architecture to one agent, switch tools, and start over. Decisions drift. Fixed bugs return. The same context gets copied into five formats and quietly falls out of sync.</p>
-          <p class="statement">This is not an AI intelligence problem.<br>It is a project memory problem.</p>
+          <p>Eighteen months ago you had one coding assistant. Today you have three running at once — Claude in one terminal, Cursor in another, Copilot in the editor. Not one of them knows the others exist.</p>
+          <p>Now put four people on the same repo. That is <strong>twelve agents</strong>, editing the same code, blind to each other. You find out at the merge. Or you do not find out at all.</p>
+          <p class="statement">Git solved this for humans.<br>Nothing solved it for agents.</p>
         </div>
       </div>
     </section>
 
     <section class="fragmentation shell" aria-labelledby="fragmentation-title">
       <div class="fragmentation-heading">
-        <p class="eyebrow">The context fragmentation loop</p>
-        <h2 id="fragmentation-title">Teach once.<br>Repeat everywhere.</h2>
+        <p class="eyebrow">Human speed vs. machine speed</p>
+        <h2 id="fragmentation-title">Git assumes<br>you are slow.</h2>
       </div>
       <div class="fragment-list">
         <div class="fragment-row">
-          <span>Claude Code</span>
-          <code>CLAUDE.md</code>
-          <p>Knows the architecture</p>
+          <span>Commit cadence</span>
+          <code>minutes apart</code>
+          <p>Agents write every few seconds</p>
         </div>
         <div class="fragment-row">
-          <span>Cursor</span>
-          <code>.cursor/rules/</code>
-          <p>Starts from zero</p>
+          <span>Branch model</span>
+          <code>one branch each</code>
+          <p>Twelve agents, one directory</p>
         </div>
         <div class="fragment-row">
-          <span>GitHub Copilot</span>
-          <code>copilot-instructions.md</code>
-          <p>Has a different version</p>
+          <span>Conflict timing</span>
+          <code>at merge</code>
+          <p>Hours after the damage</p>
         </div>
         <div class="fragment-row">
-          <span>Codex</span>
-          <code>AGENTS.md</code>
-          <p>Missing past failures</p>
+          <span>Awareness</span>
+          <code>none</code>
+          <p>No agent can see another's edits</p>
         </div>
         <div class="fragment-row">
-          <span>Antigravity</span>
-          <code>Artifacts</code>
-          <p>Another isolated memory</p>
+          <span>Blast radius</span>
+          <code>untracked</code>
+          <p>One file change breaks a dozen others</p>
         </div>
       </div>
-      <p class="fragmentation-summary"><span>5 tools</span><span>5 context formats</span><strong>1 exhausted developer</strong></p>
+      <p class="fragmentation-summary"><span>12 agents</span><span>1 working tree</span><strong>0 coordination</strong></p>
     </section>
 
     <section class="steps shell section" id="how-it-works">
       <div class="section-heading">
-        <div class="section-index">02 / How it works</div>
-        <h2>One project brain.<br>Any coding agent.</h2>
+        <div class="section-index">02 / The layer</div>
+        <h2>Claim. Coordinate.<br>Release.</h2>
       </div>
       <div class="step-list">
         <article class="step">
           <span class="step-number">01</span>
           <div>
-            <p class="eyebrow">Ingest</p>
-            <h3>Bring the context<br>you already have.</h3>
-            <p>/.relay imports existing agent instructions, project docs, decisions, failures, and active tasks into one shared format.</p>
+            <p class="eyebrow">Claim</p>
+            <h3>Nothing gets written<br>without a lock.</h3>
+            <p>A pre-tool hook fires before your agent touches a file and claims it against a shared, TTL-based lock table. If another agent holds it, the write is refused — not silently merged.</p>
           </div>
         </article>
         <article class="step">
           <span class="step-number">02</span>
           <div>
-            <p class="eyebrow">Normalize</p>
-            <h3>/.relay builds the<br>unified project brain.</h3>
-            <p>Project goals, architecture, decisions, current work, and known failures live as structured, auditable Markdown in <code>.relay/</code>.</p>
+            <p class="eyebrow">Coordinate</p>
+            <h3>Locks that understand<br>your import graph.</h3>
+            <p>Files do not exist independently. /.relay parses imports with tree-sitter and asks whether the change <em>affects</em> what someone else is editing — not just whether that exact path is open.</p>
           </div>
         </article>
         <article class="step">
           <span class="step-number">03</span>
           <div>
-            <p class="eyebrow">Translate and sync</p>
-            <h3>Every agent gets<br>its native format.</h3>
-            <p>/.relay compiles the same intelligence back into Claude, Cursor, Copilot, Codex, and Antigravity instructions.</p>
+            <p class="eyebrow">Release and sync</p>
+            <h3>Every machine on<br>the same working state.</h3>
+            <p>The post-tool hook releases the lock and the change propagates as a patch — not a project copy — to every teammate's clone through the room.</p>
           </div>
         </article>
       </div>
+      <p class="protocol-note" style="margin-top: 40px;"><a href="how-it-works.html" style="text-decoration: underline;">Read the full breakdown — every feature, end to end ↗</a></p>
     </section>
 
     <section class="protocol shell section">
       <div class="section-heading">
-        <div class="section-index">03 / The interoperability layer</div>
-        <h2>Git tracks code.<br>/.relay tracks intelligence.</h2>
+        <div class="section-index">03 / No backend</div>
+        <h2>You are the server.<br>You are the client.</h2>
       </div>
-      <p class="protocol-intro">Git does not care whether you write code in VS Code, JetBrains, or Vim. /.relay does not care which coding agent you use. It is the shared protocol between them.</p>
-      <div class="compiler-flow" aria-label="/.relay translation workflow">
+      <p class="protocol-intro">None of this needs hosted infrastructure. One person on the team runs <code>relay serve</code> — that machine is the host. Everyone else connects over an ngrok tunnel, straight to that laptop. Nothing lives on infrastructure you do not own.</p>
+      <div class="compiler-flow" aria-label="/.relay room topology">
         <div class="flow-column">
-          <p class="eyebrow">Agent inputs</p>
-          <code>CLAUDE.md</code>
-          <code>.cursorrules</code>
-          <code>copilot-instructions.md</code>
-          <code>AGENTS.md</code>
+          <p class="eyebrow">Your machine</p>
+          <code>Claude Code</code>
+          <code>Cursor</code>
+          <code>pre / post-tool hooks</code>
+          <code>relay serve</code>
         </div>
         <div class="flow-arrow" aria-hidden="true">→</div>
         <div class="flow-core">
-          <span>/.relay IR</span>
-          <small>Universal project intelligence</small>
+          <span>The room</span>
+          <small>Lock table · dep graph · patches</small>
         </div>
         <div class="flow-arrow" aria-hidden="true">→</div>
         <div class="flow-column flow-column-right">
-          <p class="eyebrow">Native outputs</p>
-          <code>Claude Code</code>
-          <code>Cursor</code>
-          <code>GitHub Copilot</code>
-          <code>Codex + Antigravity</code>
+          <p class="eyebrow">Teammates</p>
+          <code>their own filesystem</code>
+          <code>their own agents</code>
+          <code>ngrok tunnel</code>
+          <code>relay pull</code>
         </div>
       </div>
-      <p class="protocol-note">A better model arrives tomorrow? Switch instantly. Your project's history, decisions, and architectural intent stay put.</p>
+      <p class="protocol-note">No database. No account. No cloud index. Your laptop is the whole backend.</p>
     </section>
 
     <section class="memory-files shell section">
       <div class="memory-copy">
-        <div class="section-index">04 / Open by design</div>
-        <h2>Your memory is<br>just Markdown.</h2>
-        <p>No binary memory database. No opaque cloud index. /.relay stores project intelligence in files every developer, agent, and version control system already understands.</p>
+        <div class="section-index">04 / Mission Control</div>
+        <h2>One board for<br>every agent.</h2>
+        <p>Started by <code>relay serve</code>, running on your own machine. Live lock table, lock graph, code edits, unified agent chat, conflicts, and who is online — across every machine in the room.</p>
         <ul>
-          <li><span>Human-readable</span> Open it in any text editor.</li>
-          <li><span>Git-friendly</span> Review every memory change as a diff.</li>
-          <li><span>No lock-in</span> Edit it, move it, or delete it whenever you want.</li>
+          <li><span>Live locks</span> Who holds what file, right now.</li>
+          <li><span>Lock graph</span> See the dependency blast radius as a canvas.</li>
+          <li><span>Conflict notices</span> Overlapping edits surfaced within seconds.</li>
         </ul>
       </div>
-      <div class="file-tree" aria-label="Example /.relay directory">
-        <div class="terminal-bar"><span></span><span>.relay/</span></div>
-        <pre><span>your-project/</span>
-└── .relay/
-    ├── <b>project.md</b>       <i># goals and stack</i>
-    ├── <b>architecture.md</b>  <i># boundaries and structure</i>
-    ├── <b>decisions.md</b>     <i># choices and trade-offs</i>
-    ├── <b>current_task.md</b>  <i># active work</i>
-    └── <b>failures.md</b>      <i># bugs and anti-patterns</i></pre>
-        <div class="terminal-command"><span>$</span> relay sync<strong>✓ 5 agent formats updated</strong></div>
+      <div class="file-tree" aria-label="Example relay lock table">
+        <div class="terminal-bar"><span></span><span>relay status</span></div>
+        <pre><span>lock table — 4 held</span>
+├── <b>src/auth/session.ts</b>   <i># @pony · claude · write</i>
+├── <b>src/api/routes.ts</b>     <i># @unnath · cursor · write</i>
+├── <b>lib/db/client.ts</b>      <i># @arjun · codex · write</i>
+└── <b>ui/Header.tsx</b>         <i># @pony · copilot · write</i>
+    └── dep-blocked: ui/Nav.tsx, ui/Layout.tsx</pre>
+        <div class="terminal-command"><span>$</span> relay doctor<strong>✓ room healthy · 3 peers</strong></div>
       </div>
     </section>
 
     <section class="pseudo-commands shell section" id="get-started">
       <div class="section-heading" style="margin-bottom: 50px;">
         <div class="section-index">05 / How to get started</div>
-        <h2>Published on npm.<br>One command to install.</h2>
+        <h2>Two commands<br>on the host.</h2>
       </div>
-      <p class="protocol-intro" style="margin-left: 0; margin-top: 0; margin-bottom: 50px;">/.relay ships as <code>relay-os</code> on the public npm registry. Install it globally and run <code>relay init</code> inside any repo to wire up hooks, skills, <code>.relay/</code>, and Mission Control.</p>
+      <p class="protocol-intro" style="margin-left: 0; margin-top: 0; margin-bottom: 50px;">Clone the repo, link the CLI, and point /.relay at a project. Cloning through <code>relay</code> registers the workspace and installs the claim/release hooks for every agent you use — nobody has to remember a command afterwards.</p>
 
-      <div class="file-tree" aria-label="Install /.relay from npm" style="margin-bottom: 50px;">
-        <div class="terminal-bar"><span></span><span>npm</span></div>
-        <pre><span>$ npm install -g relay-os</span>
-<span>$ relay init</span>       <i># sets up .relay/, agent hooks + skills, launches Mission Control</i>
-<span>$ relay sync</span>       <i># harvest agent transcripts into shared memory</i>
-<span>$ relay context .</span>  <i># regenerate the handoff file for the next agent</i></pre>
-        <div class="terminal-command"><span>$</span> <a href="https://www.npmjs.com/package/relay-os" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">npmjs.com/package/relay-os ↗</a><strong>v0.1.0</strong></div>
+      <div class="file-tree" aria-label="Install /.relay" style="margin-bottom: 50px;">
+        <div class="terminal-bar"><span></span><span>host</span></div>
+        <pre><span>$ npm install &amp;&amp; npm link</span>   <i># the relay CLI, Node 18+</i>
+<span>$ relay login</span>              <i># GitHub identity, via the gh CLI</i>
+<span>$ relay clone &lt;repo-url&gt;</span>   <i># clone + register + install agent hooks</i>
+<span>$ relay serve</span>              <i># API :3001 · Mission Control :3002</i></pre>
+        <div class="terminal-command"><span>$</span> <a href="https://github.com/prakrititz/relayBrain" target="_blank" rel="noopener" style="color: inherit; text-decoration: none;">github.com/prakrititz/relayBrain ↗</a><strong>v0.1.0</strong></div>
       </div>
 
-      <p class="protocol-intro" style="margin-left: 0; margin-top: 0; margin-bottom: 50px;">Not built-in slash commands — agents recognize these from patched instructions:</p>
+      <p class="protocol-intro" style="margin-left: 0; margin-top: 0; margin-bottom: 50px;">Then open Mission Control → <strong>Team → Share</strong> to mint the invite link. Teammates run their own relay and join:</p>
 
       <div class="commands-table-wrapper">
         <table class="commands-table">
           <thead>
             <tr>
-              <th>Say this</th>
-              <th>Agent should</th>
+              <th>Command</th>
+              <th>What it does</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td><code>/relay update</code></td>
-              <td>Sync, update IR, regenerate handoff</td>
+              <td><code>relay serve</code></td>
+              <td>Start their local relay, then join with the host's invite link</td>
             </tr>
             <tr>
-              <td><code>/relay context</code></td>
-              <td>Read handoff file</td>
+              <td><code>relay pull</code></td>
+              <td>Apply the host's current working state onto this clone</td>
             </tr>
             <tr>
-              <td><code>/relay init</code></td>
-              <td>Install Relay if missing</td>
+              <td><code>relay push</code></td>
+              <td>Send your dirty working-tree files back to the room</td>
+            </tr>
+            <tr>
+              <td><code>relay doctor</code></td>
+              <td>Walk the room chain and name the broken link</td>
             </tr>
           </tbody>
         </table>
@@ -278,15 +282,16 @@
 
     <section class="features shell section">
       <div class="section-heading">
-        <div class="section-index">06 / Built for teams</div>
-        <h2>Memory that moves<br>at the speed of work.</h2>
+        <div class="section-index">06 / Built for parallel agents</div>
+        <h2>Conflicts prevented,<br>not discovered.</h2>
       </div>
       <div class="feature-grid">
-        <article><span>01</span><p class="eyebrow">Cross-tool memory</p><h3>One memory layer across every AI coding tool.</h3></article>
-        <article><span>02</span><p class="eyebrow">Team presence</p><h3>See what every teammate's agent is working on, live.</h3></article>
-        <article><span>03</span><p class="eyebrow">Vote on decisions</p><h3>Propose changes. Team votes. Majority commits.</h3></article>
-        <article><span>04</span><p class="eyebrow">Memory search</p><h3>Ask what the team decided. Get the answer, instantly.</h3></article>
+        <article><span>01</span><p class="eyebrow">File locking</p><h3>Exclusive write claims, enforced before the edit lands.</h3></article>
+        <article><span>02</span><p class="eyebrow">Dependency-graph locking</p><h3>Blocks the blast radius, not just the exact path.</h3></article>
+        <article><span>03</span><p class="eyebrow">Patch sync</p><h3>Every machine on the same state, without copying the project.</h3></article>
+        <article><span>04</span><p class="eyebrow">Mission Control</p><h3>Every agent on every machine, on one live board.</h3></article>
       </div>
+      <p class="protocol-note" style="margin-top: 40px;"><a href="how-it-works.html" style="text-decoration: underline;">Full feature list and architecture ↗</a></p>
     </section>
 
     <aside class="traction shell" aria-label="Project information">
@@ -295,8 +300,8 @@
 
     <section class="final-cta" id="access">
       <div class="shell final-cta-inner">
-        <p class="eyebrow">The shared brain is ready</p>
-        <h2>Your team's AI is only as smart<br>as your team's memory.</h2>
+        <p class="eyebrow">The layer is ready</p>
+        <h2>Do not just add more agents.<br>Just relay.it</h2>
         <a class="button button-large" href="https://github.com/prakrititz/relayBrain" target="_blank">Try now for free <span aria-hidden="true">↗</span></a>
       </div>
     </section>
@@ -304,7 +309,7 @@
 
   <footer class="footer shell">
     <a class="wordmark" href="#top"><img src="logo.png" alt="" class="inline-logo" /> /.relay</a>
-    <p>Shared memory for AI teams.</p>
+    <p>The coordination layer for AI agents.</p>
     <p>© 2026 /.relay</p>
   </footer>
 

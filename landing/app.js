@@ -1,9 +1,9 @@
 const entries = [
-  ["10:04", "Pony / Claude Code", "auth: JWT over sessions (stateless, mobile-ready)"],
-  ["10:06", "Unnath / Copilot", "rate_limit: 100 req/min per IP, express-rate-limit"],
-  ["10:09", "Arjun / Codex", "proposed: use tRPC instead of REST [2 votes pending]"],
-  ["10:11", "/.RELAY MEMORY", "#48 committed - \"tRPC decision\" (3/3 voted)"],
-  ["10:12", "New member joined", "synced 847 memory entries in 0.3s"]
+  ["10:04", "Pony / Claude Code", "claim src/auth/session.ts — lock held 15s"],
+  ["10:06", "Unnath / Cursor", "blocked on src/auth/session.ts — waiting on @pony"],
+  ["10:09", "Arjun / Codex", "claim lib/db/client.ts — dep graph: 4 dependents guarded"],
+  ["10:11", "/.RELAY ROOM", "patch pushed → 3 peers on the same working state"],
+  ["10:12", "New machine joined", "mirrored 4 live locks over the tunnel in 0.3s"]
 ];
 
 const stream = document.querySelector("#memory-stream");
