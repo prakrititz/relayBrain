@@ -42,6 +42,9 @@ export function RightRail() {
         <div className={ui.kicker}>Memory</div>
         <p>
           {dashboard.memory?.historyCount ?? dashboard.history?.length ?? 0} events · {dashboard.memory?.chatCount ?? 0} chats · {dashboard.memory?.editCount ?? 0} edits
+          {(dashboard.stats?.collisions?.totalSaved ?? 0) > 0
+            ? ` · ${dashboard.stats?.collisions?.totalSaved} collision(s) prevented`
+            : ""}
           {(dashboard.conflicts || []).length ? ` · ${dashboard.conflicts.length} overlap(s)` : ""}
         </p>
       </section>

@@ -181,9 +181,34 @@ export type FileLock = {
   releasedAt?: number;
 };
 
+export type CollisionMemberStats = {
+  ownerLogin: string;
+  claimsBlocked: number;
+  patchesBlocked: number;
+  patchesSkipped: number;
+  patchesDeferred: number;
+  mergesFlagged: number;
+  totalSaved: number;
+  updatedAt?: number;
+};
+
+export type CollisionStats = {
+  claimsBlocked: number;
+  patchesBlocked: number;
+  patchesSkipped: number;
+  patchesDeferred: number;
+  mergesFlagged: number;
+  totalSaved: number;
+  scope?: "solo" | "room";
+  updatedAt?: number;
+  peerLogins?: string[];
+  byMember?: CollisionMemberStats[];
+  recent?: { kind: string; ts: number; file?: string; agentId?: string; holder?: string; reason?: string; ownerLogin?: string }[];
+};
+
 export type Dashboard = {
   project: Project;
-  stats: { events?: number; agents?: number; patches?: number };
+  stats: { events?: number; agents?: number; patches?: number; collisions?: CollisionStats };
   agents: Agent[];
   collaborators: Collaborator[];
   activity: ActivityItem[];

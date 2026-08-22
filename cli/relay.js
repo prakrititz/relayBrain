@@ -15,6 +15,7 @@ function help() {
   relay whoami             Show the signed-in GitHub user
   relay clone <url> [dir]  git clone + register workspace + install agent hooks
   relay add <path>         Attach an existing local repo
+  relay init [path]        Wire hooks, MCP, and relay-os instructions (default: cwd)
   relay serve              Start API on 127.0.0.1:3001 and Mission Control on :3002
   relay serve --no-ui      Start API + coordinator only
   relay push               Send your dirty working-tree files to the shared room
@@ -330,6 +331,28 @@ async function main() {
   if (cmd === "add") {
     const project = clone.addLocal(rest[0], rest[1]);
     console.log(`added ${project.path} as ${project.name}`);
+    return;
+  }
+
+  if (cmd === "init") {
+    const target = path.resolve(rest[0] || process.cwd());
+    if (!fs.existsSync(target)) {
+      console.error(`path not found: ${target}`);
+      process.exitCode = 1;
+      return;
+    }
+    const { installProjectHooks, installGlobalHooks } = require("../backend/lib/installHooks");
+    try {
+      installProjectHooks(target);
+      installGlobalHooks();
+      const existing = clone.addLocal(target, path.basename(target));
+      console.log(`Relay initialized in ${existing.path}`);
+      console.log("Hooks + MCP wired for Cursor, Claude Code, Codex, Copilot CLI, Antigravity.");
+      console.log("Run `relay serve`, then say `/relay ask` in any agent — it calls MCP relay_room_brief.");
+    } catch (err) {
+      console.error(err.message || err);
+      process.exitCode = 1;
+    }
     return;
   }
 

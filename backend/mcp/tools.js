@@ -4,9 +4,11 @@
  * `backend/mcp/server.js` feeds this over stdio (one process per agent, started
  * by the agent itself); `POST /mcp` on the room host feeds it over HTTP. Both
  * hand in a context object instead of reading process.env here, so the same
- * thirteen tools can answer for "the agent running on this machine" and for
+ * fifteen tools can answer for "the agent running on this machine" and for
  * "a room member asking through the tunnel" without either transport growing
  * its own copy of the logic.
+ *
+ * When the user says `/relay ask`, agents call `relay_room_brief` here — not a CLI command.
  */
 const client = require("../coordinator/client");
 const { loadMemory, loadRegistry } = require("../lib/store");
@@ -17,6 +19,8 @@ const { appendEvent, listEvents, jsonContext } = require("../lib/centralStore");
 const { clientEventId } = require("../lib/memorySync");
 const { dependsOn } = require("../lib/deps");
 const { syncTranscriptsQueued } = require("../lib/transcripts/sync");
+const { compileRoomAsk } = require("../lib/roomAsk");
+const { getCollisionStats, mergeCollisionStats } = require("../lib/collisionMetrics");
 
 const PROTOCOL_VERSION = "2024-11-05";
 const DEFAULT_LIMIT = 50;
@@ -39,6 +43,17 @@ const TOOLS = [
   { name: "relay_report_decision", description: "Append a decision event", inputSchema: { type: "object", properties: { decision_id: { type: "string" }, decision: { type: "string" }, status: { type: "string" } } } },
   { name: "relay_update_task", description: "Append a task event", inputSchema: { type: "object", properties: { task_id: { type: "string" }, description: { type: "string" }, status: { type: "string" } } } },
   { name: "relay_get_conflicts", description: "Overlapping edits in the last 5 minutes", inputSchema: { type: "object", properties: {} } },
+  {
+    name: "relay_room_brief",
+    description:
+      "Teammate activity brief for /relay ask — peer chat, code edits, tool activity, and live locks. Read-only; safe on the room MCP endpoint.",
+    inputSchema: { type: "object", properties: { limit: { type: "number" } } },
+  },
+  {
+    name: "relay_get_collision_stats",
+    description: "Lifetime counters for collisions Relay prevented (blocked claims, held-back patches, merge flags).",
+    inputSchema: { type: "object", properties: {} },
+  },
 ];
 
 /**
@@ -58,6 +73,8 @@ const READ_ONLY = new Set([
   "relay_get_decisions",
   "relay_get_active_tasks",
   "relay_get_conflicts",
+  "relay_room_brief",
+  "relay_get_collision_stats",
 ]);
 
 function toolsFor(ctx) {
@@ -92,6 +109,12 @@ function defaultCtx(overrides = {}) {
 function clampLimit(value) {
   const n = Number(value) || DEFAULT_LIMIT;
   return Math.max(1, Math.min(MAX_LIMIT, n));
+}
+
+function locksFromStatus(st) {
+  const map = st?.locks;
+  if (!map || typeof map !== "object") return [];
+  return Object.values(map).filter((l) => l && !l.released);
 }
 
 /**
@@ -248,6 +271,34 @@ async function callTool(name, args = {}, context = {}) {
     case "relay_get_conflicts": {
       const view = await roomView(ctx, memory);
       return { conflicts: detectConflicts({ ...memory, edits: view.edits || [] }), room: view.room };
+    }
+    case "relay_room_brief": {
+      const limit = Math.min(80, Math.max(5, clampLimit(args.limit || 30)));
+      const reg = loadRegistry();
+      const project = reg.projects.find((p) => p.id === pid);
+      if (project) {
+        try {
+          await syncTranscriptsQueued(project, { ownerLogin: ctx.owner || ctx.user || "local" });
+        } catch {
+          /* transcripts are best-effort */
+        }
+      }
+      const view = await roomView(ctx, memory);
+      const room = loadRoom(ctx.workspace);
+      const st = await client.status(ctx.workspace);
+      const brief = compileRoomAsk({
+        view,
+        room,
+        login: ctx.owner || ctx.user || "local",
+        locks: locksFromStatus(st),
+        limit,
+      });
+      return { markdown: brief.markdown, data: brief.json, room: view.room };
+    }
+    case "relay_get_collision_stats": {
+      const login = ctx.owner || ctx.user || "local";
+      const merged = mergeCollisionStats(memory, { localLogin: login, projectId: pid });
+      return { collisions: merged, local: getCollisionStats(pid), room: (await roomView(ctx, memory)).room };
     }
     case "relay_report_change":
       return appendEvent(centralId, {

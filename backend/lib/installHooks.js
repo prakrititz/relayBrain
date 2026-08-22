@@ -1,6 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
+const { EDIT, READ } = require("./editMatchers");
+const { installProjectRelay, installGlobalRelay } = require("./installAgentRelay");
 
 function repoRoot() {
   return path.join(__dirname, "..", "..");
@@ -15,50 +17,6 @@ function writeJson(file, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(value, null, 2));
 }
-
-// Only writes are arbitrated. Reads are matched separately so the dashboard can
-// show what every agent is looking at, and they never take a lock — an agent
-// reading a file must never be able to stall an agent trying to edit one.
-// Every product names its tools differently, and a matcher naming a tool that
-// does not exist fires for nothing while looking perfectly healthy in the
-// config. These lists are the documented tool names for each product, not
-// plausible-looking guesses.
-const EDIT = {
-  // Bash|PowerShell|Edit|Write|Read|Glob|Grep|Agent|WebFetch|WebSearch.
-  // "Replace" and "MultiEdit" are not Claude Code tools.
-  claude: "Edit|Write|NotebookEdit",
-  // Shell|Read|Write|Grep|Delete|Task, documented as non-exhaustive.
-  cursor: "Write|Edit|Delete",
-  // Everything that touches a file goes through apply_patch, which is also
-  // matchable under the aliases Edit and Write.
-  codex: "apply_patch|Edit|Write",
-  // Runtime tool names, which is what a camelCase event name selects.
-  copilot: "edit|create",
-  // Documented Antigravity write tools. Path lives on toolCall.args.TargetFile
-  // (quoted). view_file is a read — it is matched separately below.
-  antigravity: "write_to_file|replace_file_content|multi_replace_file_content",
-};
-
-const READ = {
-  // Documented Claude Code tools: PreToolUse matcher is the tool name.
-  // Path: tool_input.file_path (Read) / tool_input.path (Grep, Glob).
-  claude: "Read|Grep|Glob",
-  // Reads are covered by the dedicated beforeReadFile event below, which is the
-  // one Cursor actually guarantees for file reads. Glob/codebase_search/list_dir
-  // are not matcher values and previously matched nothing.
-  cursor: "Read|Grep",
-  // Codex has no documented read or search tool: reads and greps run through
-  // the shell, so there is nothing to match. See the note where the Codex
-  // config is written.
-  codex: null,
-  // Copilot documents preToolUse as the read hook; runtime names are lowercase.
-  // toolArgs is a JSON string with path / file_path.
-  copilot: "view|grep|glob",
-  // Documented Antigravity read tools. Paths: view_file.AbsolutePath,
-  // list_dir.DirectoryPath, grep_search.SearchPath, find_by_name.SearchDirectory.
-  // There is no PreRead event — PreToolUse with these matchers is the hook.
-  antigravity: "view_file|grep_search|list_dir|find_by_name",
-};
 
 function installProjectHooks(workspacePath) {
   if (!workspacePath) return;
@@ -202,6 +160,11 @@ function installProjectHooks(workspacePath) {
   });
 
   writeJson(path.join(workspacePath, ".agents", "hooks.json"), antigravityHooks(anti, antiPost, antiStop));
+  try {
+    installProjectRelay(workspacePath);
+  } catch {
+    /* instructions + MCP are best-effort */
+  }
 }
 
 /**
@@ -336,6 +299,11 @@ function installGlobalHooks() {
   // from a plugin bundle under it.
   writeJson(path.join(home, ".gemini", "config", "plugins", "relay", "hooks.json"), antigravity);
   writeJson(path.join(home, ".gemini", "config", "hooks.json"), antigravity);
+  try {
+    installGlobalRelay();
+  } catch {
+    /* global MCP is best-effort */
+  }
 }
 
 module.exports = { installProjectHooks, installGlobalHooks };

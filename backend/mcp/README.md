@@ -19,7 +19,7 @@ still works when the tunnel does not.
 
 ## Two transports, one tool surface
 
-Both are served by [`tools.js`](./tools.js). They expose the same thirteen tools.
+Both are served by [`tools.js`](./tools.js). They expose the same fifteen tools.
 
 ### stdio — what your agents already use
 
@@ -66,9 +66,11 @@ remote agent never sees a tool it cannot call.
 | Tool | Answers |
 |---|---|
 | `relay_get_chat_history` | what everyone told their agents to do, and what the agents said back |
+| `relay_room_brief` | teammate activity brief — **`/relay ask`** in Cursor, Claude, Codex, Copilot, Antigravity |
 | `relay_get_recent_changes` | which files changed, by whom, with diffs |
 | `relay_status` | who holds which lock right now |
 | `relay_get_conflicts` | who edited the same file as someone else in the last 5 minutes |
+| `relay_get_collision_stats` | lifetime counters for collisions Relay prevented |
 | `relay_get_project_context` | Central's view: changes, decisions, tasks, agents |
 | `relay_get_decisions` / `relay_get_active_tasks` | the decision and task logs |
 

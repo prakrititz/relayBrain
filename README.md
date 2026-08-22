@@ -135,6 +135,7 @@ Requires **Node.js 18+** (20+ recommended). No database, no hosted backend, no l
 | `relay login` / `logout` / `whoami` | GitHub identity (via `gh` CLI, or device flow with `GITHUB_CLIENT_ID`) |
 | `relay clone <url> [dir]` | git clone + register workspace + install agent hooks |
 | `relay add <path>` | Attach an existing local repo |
+| `relay init [path]` | Wire hooks, Relay MCP, and `/relay ask` instructions for all agents |
 | `relay serve` | API on `127.0.0.1:3001` + Mission Control on `:3002` |
 | `relay serve --no-ui` | API + coordinator only |
 | `relay push` | Send your dirty working-tree files to the shared room |
@@ -154,7 +155,7 @@ Started by `relay serve` — runs on your own machine, no hosted account.
 | Dashboard | http://localhost:3002 |
 | API | http://127.0.0.1:3001/api/health |
 
-**File locks panel** · **lock graph canvas** · **code edits** · **agent session chat** · **activity timeline** · **team and room presence** · **conflict notices**.
+**Collisions prevented counter** (persisted to `~/.relay/data/projects/<id>/collisions.json` and mirrored to `<repo>/.relay/collisions.json`).
 
 ---
 
@@ -181,6 +182,8 @@ Coordination tools (`relay_claim_file`, `relay_release_file`, `relay_status`) ru
 | `relay_get_conflicts` | Overlapping edits in the last 5 minutes |
 | `relay_get_recent_changes` | Recent `code_edit` events |
 | `relay_get_chat_history` | Unified agent chat across every room member |
+| `relay_room_brief` | Teammate activity brief (for the `/relay ask` agent pseudo-command) |
+| `relay_get_collision_stats` | Lifetime counters for collisions Relay prevented |
 | `relay_report_change` | Push a code-change event |
 | `relay_report_decision` / `relay_get_decisions` | Append / read decisions |
 | `relay_update_task` / `relay_get_active_tasks` | Append / read tasks |
@@ -193,15 +196,15 @@ Coordination tools (`relay_claim_file`, `relay_release_file`, `relay_status`) ru
 
 ## 🪝 Hooks
 
-`relay clone` / `relay add` install pre-tool (**claim**), post-tool (**release**), pre-read, and stop hooks into your project:
+`relay clone` / `relay add` / `relay init` install pre-tool (**claim**), post-tool (**release**), pre-read, stop hooks, **Relay MCP** (`relay_room_brief` for `/relay ask`), and the relay-os instruction block into every agent surface:
 
-| Agent | Config | Write tools intercepted |
-|-------|--------|-------------------------|
-| Claude Code | `.claude/settings.json` | `Edit`, `Write`, `NotebookEdit` |
-| Cursor | `.cursor/hooks.json` | `Write`, `Edit`, `Delete` |
-| Codex | `.codex/hooks.json` | `apply_patch`, `Edit`, `Write` |
-| Copilot CLI | `.github/hooks/relay-os.json` | `edit`, `create` |
-| Antigravity | `.agents/hooks.json` | `write_to_file`, `replace_file_content`, `multi_replace_file_content` |
+| Agent | Hooks | Instructions | Relay MCP (`relay_room_brief`) |
+|-------|--------|--------------|--------------------------------|
+| Claude Code | `.claude/settings.json` | `CLAUDE.md` | `.claude/settings.json` → `mcpServers.relay` |
+| Cursor | `.cursor/hooks.json` | `.cursor/rules/relay.mdc`, `AGENTS.md` | `.cursor/mcp.json` |
+| Codex | `.codex/hooks.json` | `AGENTS.md` | `.codex/config.toml` → `[mcp_servers.relay]` |
+| Copilot CLI | `.github/hooks/relay-os.json` | `.github/copilot-instructions.md` | `.github/mcp.json` |
+| Antigravity | `.agents/hooks.json` | `AGENTS.md` | `.agents/mcp_config.json` |
 
 Languages parsed for the dependency graph: TypeScript/JavaScript, Python, Go, Rust, Java, C#, C/C++, PHP, Ruby.
 

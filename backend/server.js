@@ -39,6 +39,8 @@ const { cloneRepo, addLocal, detectRemoteUrl } = require("./lib/cloneRepo");
 const { installProjectHooks, installGlobalHooks } = require("./lib/installHooks");
 const { loadRoom, saveRoom, clearRoom, share: shareRoom, ensureTunnel, upsertMember, markLeft, dropMember, membersView } = require("./lib/room");
 const { localSnapshot, savePeerSnapshot, mergeRoomViews, clearPeers } = require("./lib/roomSync");
+const { compileRoomAsk } = require("./lib/roomAsk");
+const { recordCollision, mergeCollisionStats, loadLocalCollisions } = require("./lib/collisionMetrics");
 const {
   createInvite,
   revokeInvite,
@@ -535,9 +537,10 @@ async function main() {
   function roomStatePayload(project, type = "state") {
     const memory = loadMemory(project.id);
     const view = mergeRoomViews(memory);
+    const login = currentUser().login || "local";
     return {
       type,
-      hostLogin: currentUser().login,
+      hostLogin: login,
       projectId: project.id,
       lastTranscriptSyncAt: memory.lastTranscriptSyncAt || 0,
       chats: view.chats,
@@ -546,6 +549,7 @@ async function main() {
       edits: view.edits,
       agents: view.agents,
       stats: memory.stats || {},
+      roomCollisions: mergeCollisionStats(memory, { localLogin: login, projectId: project.id }),
     };
   }
 
@@ -709,7 +713,11 @@ async function main() {
       if (!sendToHost(body)) {
         fetch(`${room.url.replace(/\/$/, "")}/api/patches`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "relay" },
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "relay",
+            ...(room.memberToken ? { "x-relay-room-token": room.memberToken } : {}),
+          },
           body: JSON.stringify(body),
         })
           .then((r) => {
@@ -775,7 +783,14 @@ async function main() {
     if (applyingRemote.has(project.id) || applyingRemote.has(`${project.id}:${file}`)) return;
     const rel = file.replace(/\\/g, "/");
     const publish = skipPublish(lockTable, project.path, rel);
-    if (publish.skip) return;
+    if (publish.skip) {
+      bumpCollision(project.id, "patch_skipped", {
+        file: rel,
+        holder: publish.held?.agentId,
+        reason: publish.reason,
+      });
+      return;
+    }
     const held = publish.held;
     if (held) lockTable.heartbeat({ agentId: held.agentId, file: rel, workspaceId: project.path });
     if (publish.defer) {
@@ -787,6 +802,7 @@ async function main() {
       // lock quietly expires, and the edit is never published at all. Remember
       // it instead and let the lock's own release or expiry release the edit.
       deferredEdits.set(`${project.id}:${rel}`, { project, rel, agentId: held?.agentId || null, at: now });
+      bumpCollision(project.id, "patch_deferred", { file: rel, agentId: held?.agentId });
       return;
     }
     fanOutLocalFile(project, rel, held?.agentId);
@@ -1053,7 +1069,17 @@ async function main() {
     const project = peerProject(hint);
     if (!project) return { applied: false, reason: "no_local_repo" };
     const clash = applyClash(lockTable, project.path, patch.file, patch);
-    if (clash) return { applied: false, projectId: project.id, ...clash };
+    if (clash) {
+      if (project?.id) {
+        bumpCollision(project.id, "patch_blocked", {
+          file: patch.file,
+          holder: clash.holder,
+          agent: patch.agent,
+          reason: clash.reason,
+        });
+      }
+      return { applied: false, projectId: project.id, ...clash };
+    }
     applyingRemote.add(`${project.id}:${patch.file}`);
     const result = applyPeerFile(project.id, patch, project.path);
     applyingRemote.delete(`${project.id}:${patch.file}`);
@@ -1569,16 +1595,18 @@ async function main() {
 
   // Only guests push. The host is already the aggregator — sending its own
   // history out through its tunnel and back would be a pointless round trip.
-  async function pushRoomHistory(room, project) {
+  async function pushRoomSnapshot(room, project, { force } = {}) {
     if (room?.role !== "guest" || !room.url || !project) return;
     const target = room.hostProjectId;
     if (!target) return;
     const memory = loadMemory(project.id);
     const stamp = memory.lastTranscriptSyncAt || 0;
-    if (lastPushedSync.get(project.id) === stamp) return;
-    lastPushedSync.set(project.id, stamp);
+    const collisionStamp = loadLocalCollisions(project.id).updatedAt || 0;
+    const pushKey = `${stamp}:${collisionStamp}`;
+    if (!force && lastPushedSync.get(project.id) === pushKey) return;
+    lastPushedSync.set(project.id, pushKey);
     const login = currentUser().login;
-    const snapshot = localSnapshot(memory, login);
+    const snapshot = localSnapshot(memory, login, project.id);
     const payload = { type: "history", projectId: target, login, snapshot };
     if (sendToHost(payload)) return;
     try {
@@ -1590,6 +1618,26 @@ async function main() {
     } catch {
       lastPushedSync.delete(project.id);
     }
+  }
+
+  async function pushRoomHistory(room, project) {
+    return pushRoomSnapshot(room, project, { force: false });
+  }
+
+  function notifyCollisionMetrics(project) {
+    if (!project?.id) return;
+    const room = loadRoom(project.path);
+    const login = currentUser().login || "local";
+    const merged = mergeCollisionStats(loadMemory(project.id), { localLogin: login, projectId: project.id });
+    sse.emit("metrics", { workspaceId: project.id, collisions: merged });
+    if (room?.role === "host" && room.url) queueRoomState(project);
+    else if (room?.role === "guest" && room.url) pushRoomSnapshot(room, project, { force: true }).catch(() => undefined);
+  }
+
+  function bumpCollision(projectId, kind, detail = {}) {
+    recordCollision(projectId, kind, detail);
+    const project = loadRegistry().projects.find((p) => p.id === projectId);
+    if (project) notifyCollisionMetrics(project);
   }
 
   async function pullRoomHistory(room, project) {
@@ -2196,6 +2244,17 @@ async function main() {
     }
     const result = lockTable.claim(scoped);
     if (warnings.length && result.allowed) result.warning = result.warning || warnings[0];
+    if (!result.allowed) {
+      const project = projectForPath(scoped.workspaceId) || currentProject();
+      if (project?.id) {
+        bumpCollision(project.id, "claim_blocked", {
+          file: scoped.file,
+          agentId: scoped.agentId,
+          holder: result.holder,
+          reason: result.reason,
+        });
+      }
+    }
     res.status(result.allowed ? 200 : 409).json(result);
   });
   app.post("/api/coord/release", requireRoomMember, async (req, res) => {
@@ -2554,11 +2613,12 @@ async function main() {
       ? loadRegistry().projects.find((p) => p.id === req.query.projectId) || currentProject()
       : currentProject();
     if (!project) return res.status(404).json({ error: "no_local_repo" });
+    const login = currentUser().login || "local";
     const memory = loadMemory(project.id);
     const view = mergeRoomViews(memory, { exclude: req.query.exclude || null });
     res.json({
       ok: true,
-      hostLogin: currentUser().login,
+      hostLogin: login,
       projectId: project.id,
       lastTranscriptSyncAt: memory.lastTranscriptSyncAt || 0,
       chats: view.chats,
@@ -2567,6 +2627,7 @@ async function main() {
       edits: view.edits,
       agents: view.agents,
       stats: memory.stats || {},
+      roomCollisions: mergeCollisionStats(memory, { localLogin: login, exclude: req.query.exclude || null, projectId: project.id }),
     });
   });
 
@@ -3039,6 +3100,44 @@ async function main() {
     });
   });
 
+  app.post("/api/ask", async (req, res) => {
+    const project = req.body?.workspacePath ? projectForPath(req.body.workspacePath) : currentProject();
+    if (!project) return res.status(404).json({ error: "no_local_repo" });
+    const limit = Math.min(80, Math.max(5, Number(req.body?.limit) || 30));
+    const writeFile = req.body?.write !== false;
+    const room = loadRoom(project.path);
+    try {
+      await syncTranscriptsQueued(project, { ownerLogin: currentUser().login || "local" });
+    } catch {
+      /* transcripts are best-effort */
+    }
+    if (room?.role === "guest" && room.url) {
+      await pullRoomHistory(room, project).catch(() => undefined);
+    }
+    const memory = loadMemory(project.id);
+    const view = mergeRoomViews(memory);
+    const user = currentUser();
+    const brief = compileRoomAsk({
+      view,
+      room,
+      login: user.login,
+      locks: locksFor({ id: project.id, path: project.path }),
+      limit,
+    });
+    let written = null;
+    if (writeFile) {
+      const out = path.join(project.path, ".relay", "relay_ask.md");
+      try {
+        fs.mkdirSync(path.dirname(out), { recursive: true });
+        fs.writeFileSync(out, brief.markdown);
+        written = out;
+      } catch (err) {
+        return res.status(500).json({ error: "write_failed", detail: String(err.message || err) });
+      }
+    }
+    res.json({ ok: true, written, markdown: brief.markdown, data: brief.json });
+  });
+
   app.post("/api/push", (req, res) => {
     const project = req.body?.workspacePath ? projectForPath(req.body.workspacePath) : currentProject();
     if (!project) return res.status(404).json({ error: "no_local_repo" });
@@ -3339,7 +3438,22 @@ async function main() {
     const clean = sanitizeLockBody(body, session);
     if (!clean) return { error: "agent_required" };
     const scoped = peerScoped(clean, session);
-    if (op === "claim") return lockTable.claim(scoped);
+    if (op === "claim") {
+      const result = lockTable.claim(scoped);
+      if (!result.allowed) {
+        const project = projectForPath(scoped.workspaceId) || currentProject();
+        if (project?.id) {
+          bumpCollision(project.id, "claim_blocked", {
+            file: scoped.file,
+            agentId: scoped.agentId,
+            holder: result.holder,
+            reason: result.reason,
+            via: "room_rpc",
+          });
+        }
+      }
+      return result;
+    }
     if (op === "release") return lockTable.release(scoped);
     if (op === "heartbeat") return lockTable.heartbeat(scoped);
     if (op === "read") {

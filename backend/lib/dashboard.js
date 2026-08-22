@@ -1,5 +1,6 @@
 const { loadMemory, loadSession } = require("./store");
 const { detectConflicts } = require("./conflicts");
+const { getCollisionStats, mergeCollisionStats, hydrateMemoryCollisions } = require("./collisionMetrics");
 const { mergeRoomViews } = require("./roomSync");
 
 function tagMine(list, login) {
@@ -10,7 +11,7 @@ function tagMine(list, login) {
 }
 
 function buildDashboard(project, memory) {
-  const mem = stripMarkdownIr(memory || loadMemory(project.id));
+  const mem = hydrateMemoryCollisions(project.id, stripMarkdownIr(memory || loadMemory(project.id)));
   const login = loadSession().login || "local";
   // Outside a room `roomPeers` is empty and this is the local memory verbatim;
   // inside one it folds in every other machine's chats, edits and activity so
@@ -18,7 +19,11 @@ function buildDashboard(project, memory) {
   const view = mergeRoomViews(mem);
   return {
     project,
-    stats: mem.stats || {},
+    stats: {
+      ...(mem.stats || {}),
+      collisions: mergeCollisionStats(mem, { localLogin: login, projectId: project.id }),
+      collisionsLocal: getCollisionStats(project.id),
+    },
     agents: view.agents,
     collaborators: mem.collaborators || [],
     activity: tagMine(view.activity, login),

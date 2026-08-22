@@ -82,16 +82,24 @@ function hydratePayload(payload) {
   return p;
 }
 
+function toolNameFromPayload(payload) {
+  const p = hydratePayload(payload);
+  return p.tool_name || p.toolName || p.tool_input?.tool || p.name || null;
+}
+
 function extractFilePath(payload) {
   const p = hydratePayload(payload);
   const args = p.toolCall?.args || p.toolCall?.arguments || {};
   return (
     // Cursor's beforeReadFile / beforeTabFileRead put the path at the top level
-    // rather than under tool_input.
+    // rather than under tool_input. postToolUse uses tool_name + tool_input.
     p.file_path ||
     p.tool_input?.file_path ||
     p.tool_input?.target_file ||
     p.tool_input?.path ||
+    p.tool_input?.relative_path ||
+    p.tool_input?.relative_workspace_path ||
+    p.tool_input?.file ||
     p.TargetFile ||
     p.AbsolutePath ||
     args.TargetFile ||
@@ -178,6 +186,9 @@ function workspaceRelativeFiles(workspace, filePaths) {
 // Opt-in, off by default: RELAY_HOOK_DEBUG=1 appends what each hook saw to
 // ~/.relay/hook-debug.log. A hook that fails open leaves no other trace, so
 // without this "nothing showed up" is unfalsifiable.
+//
+// Post-tool phases: post:enter, post:no-files, post:flush, post:release,
+// post:flush-fail, post:error. Stop: stop:flush-owned, stop:release-all.
 function debugHook(mode, phase, detail) {
   if (!process.env.RELAY_HOOK_DEBUG) return;
   try {
@@ -436,13 +447,20 @@ function respondPost() {
 async function flushFiles(workspace, agentId, files) {
   const port = process.env.RELAY_PORT || 3001;
   try {
-    await fetch(`http://127.0.0.1:${port}/api/flush-file`, {
+    const res = await fetch(`http://127.0.0.1:${port}/api/flush-file`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ workspacePath: workspace, agentId, files }),
     });
-  } catch {
-    /* fail-open */
+    let body = {};
+    try {
+      body = await res.json();
+    } catch {
+      body = {};
+    }
+    return { ok: res.ok, status: res.status, body };
+  } catch (err) {
+    return { ok: false, error: err.message || String(err) };
   }
 }
 
@@ -460,21 +478,61 @@ async function flushOwned(workspace, agentId) {
 }
 
 async function runPostTool(declaredMode) {
+  let mode = declaredMode;
   try {
     const raw = await readStdin();
     const payload = raw ? JSON.parse(raw) : {};
-    const mode = detectProduct(payload, declaredMode);
+    mode = detectProduct(payload, declaredMode);
     const workspace = resolveWorkspacePath(payload);
-    const files = workspaceRelativeFiles(workspace, extractFilePaths(payload));
+    const rawPaths = extractFilePaths(payload);
+    const files = workspaceRelativeFiles(workspace, rawPaths);
     const agentId = lockAgentIdFor(mode, payload);
-    if (files.length) {
-      await flushFiles(workspace, agentId, files);
-      for (const file of files) {
-        await client().releaseFile(workspace, agentId, file);
-      }
+    const toolName = toolNameFromPayload(payload);
+    debugHook(mode, "post:enter", {
+      workspace,
+      toolName,
+      agentId,
+      files,
+      rawPaths: rawPaths.slice(0, 8),
+      keys: Object.keys(payload),
+    });
+    if (!files.length) {
+      debugHook(mode, "post:no-files", {
+        workspace,
+        toolName,
+        rawPaths: rawPaths.slice(0, 8),
+        keys: Object.keys(payload),
+      });
+      respondPost();
+      return;
+    }
+    const flushed = await flushFiles(workspace, agentId, files);
+    debugHook(mode, "post:flush", {
+      workspace,
+      files,
+      agentId,
+      ok: flushed.ok,
+      status: flushed.status,
+      flushed: flushed.body?.flushed,
+      error: flushed.error,
+    });
+    if (!flushed.ok) {
+      debugHook(mode, "post:flush-fail", { workspace, files, agentId, ...flushed });
+    }
+    for (const file of files) {
+      const released = await client().releaseFile(workspace, agentId, file);
+      debugHook(mode, "post:release", {
+        workspace,
+        file,
+        agentId,
+        ok: released?.ok,
+        released: released?.released,
+        reason: released?.reason,
+      });
     }
     respondPost();
-  } catch {
+  } catch (err) {
+    debugHook(mode, "post:error", { message: err?.message || String(err) });
     respondPost();
   }
 }
@@ -500,17 +558,22 @@ async function ingestStop(workspace, agentId, payload, mode) {
 }
 
 async function runStop(declaredMode) {
+  let mode = declaredMode;
   try {
     const raw = await readStdin();
     const payload = raw ? JSON.parse(raw) : {};
-    const mode = detectProduct(payload, declaredMode);
+    mode = detectProduct(payload, declaredMode);
     const workspace = resolveWorkspacePath(payload);
     const agentId = lockAgentIdFor(mode, payload);
+    debugHook(mode, "stop:enter", { workspace, agentId });
     await flushOwned(workspace, agentId);
-    await client().releaseAll(workspace, agentId);
+    debugHook(mode, "stop:flush-owned", { workspace, agentId });
+    const released = await client().releaseAll(workspace, agentId);
+    debugHook(mode, "stop:release-all", { workspace, agentId, released: released?.released });
     await ingestStop(workspace, agentId, payload, mode);
     respondPost();
-  } catch {
+  } catch (err) {
+    debugHook(mode, "stop:error", { message: err?.message || String(err) });
     respondPost();
   }
 }
@@ -526,5 +589,6 @@ module.exports = {
   lockAgentIdFor,
   resolveWorkspacePath,
   detectProduct,
+  toolNameFromPayload,
   respond,
 };

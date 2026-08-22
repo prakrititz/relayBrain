@@ -160,11 +160,16 @@ function discoverCodex(workspacePath) {
   return matched;
 }
 
-function discoverCopilot(workspacePath) {
-  const storage = discoverWorkspaceStorageDir(workspacePath, [
+function copilotWorkspaceStorageRoots() {
+  return [
     path.join(HOME, "AppData", "Roaming", "Code", "User", "workspaceStorage"),
     path.join(HOME, ".config", "Code", "User", "workspaceStorage"),
-  ]);
+    path.join(HOME, "Library", "Application Support", "Code", "User", "workspaceStorage"),
+  ];
+}
+
+function discoverCopilot(workspacePath) {
+  const storage = discoverWorkspaceStorageDir(workspacePath, copilotWorkspaceStorageRoots());
   if (!storage) return [];
   const sessions = [];
   const chatDir = path.join(storage, "chatSessions");
@@ -317,10 +322,7 @@ function transcriptWatchRoots(workspacePath) {
   const codexDir = path.join(HOME, ".codex", "sessions");
   if (fs.existsSync(codexDir)) roots.push(codexDir);
   roots.push(...antigravityRoots());
-  const copilotStorage = discoverWorkspaceStorageDir(workspacePath, [
-    path.join(HOME, "AppData", "Roaming", "Code", "User", "workspaceStorage"),
-    path.join(HOME, ".config", "Code", "User", "workspaceStorage"),
-  ]);
+  const copilotStorage = discoverWorkspaceStorageDir(workspacePath, copilotWorkspaceStorageRoots());
   if (copilotStorage) roots.push(copilotStorage);
   return [...new Set(roots)];
 }
@@ -332,4 +334,5 @@ module.exports = {
   listCursorTranscriptFiles,
   discoverCursorDir,
   transcriptWatchRoots,
+  copilotWorkspaceStorageRoots,
 };

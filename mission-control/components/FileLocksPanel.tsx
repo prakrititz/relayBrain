@@ -149,9 +149,35 @@ export function FileLocksPanel() {
     };
   });
   const sessions = connected.length ? connected : fromLocks;
+  const collisions = dashboard?.stats?.collisions;
+  const saved = collisions?.totalSaved ?? 0;
+  const roomScope = collisions?.scope === "room";
+  const memberLine =
+    roomScope && collisions?.byMember?.length
+      ? collisions.byMember
+          .filter((m) => m.totalSaved > 0)
+          .map((m) => `@${m.ownerLogin} ${m.totalSaved}`)
+          .join(" · ")
+      : "";
 
   return (
     <>
+      <article className={ui.card} style={{ marginBottom: 10 }}>
+        <h3>Collisions prevented{roomScope ? " (room)" : ""}</h3>
+        <p style={{ fontSize: "1.35rem", margin: "0.2rem 0 0.5rem" }}>
+          <strong>{saved}</strong> saved by Relay
+        </p>
+        {memberLine ? (
+          <p style={{ color: "var(--muted)", marginTop: 0, marginBottom: "0.35rem" }}>{memberLine}</p>
+        ) : null}
+        <p style={{ color: "var(--muted)", marginTop: 0 }}>
+          Blocked claims {collisions?.claimsBlocked ?? 0} · held-back patches{" "}
+          {(collisions?.patchesBlocked ?? 0) + (collisions?.patchesSkipped ?? 0)} · merge flags{" "}
+          {collisions?.mergesFlagged ?? 0}
+          {(collisions?.patchesDeferred ?? 0) > 0 ? ` · deferred ${collisions?.patchesDeferred}` : ""}
+        </p>
+      </article>
+
       <div className={ui.rowBetween} style={{ marginBottom: 10 }}>
         <div className={ui.kicker}>Coordinator</div>
         <div style={{ display: "flex", gap: 6 }}>

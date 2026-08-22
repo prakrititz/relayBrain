@@ -1,4 +1,5 @@
 const { loadMemory, saveMemory } = require("./store");
+const { loadLocalCollisions } = require("./collisionMetrics");
 
 // What one machine publishes to the room, and what it stores for every other
 // machine in the room. Kept in the same memory.json as local history so the
@@ -27,7 +28,10 @@ function trimThread(thread) {
 }
 
 /** The locally-owned slice of a workspace's memory, sized for the wire. */
-function localSnapshot(memory, login) {
+function localSnapshot(memory, login, projectId) {
+  const stats = { ...(memory.stats || {}) };
+  // Prefer file-backed collision counters so room peers see the durable totals.
+  if (projectId) stats.collisions = loadLocalCollisions(projectId);
   return {
     login,
     updatedAt: Date.now(),
@@ -37,7 +41,7 @@ function localSnapshot(memory, login) {
     activity: (memory.activity || []).slice(0, MAX_ACTIVITY),
     edits: (memory.edits || []).slice(0, MAX_EDITS),
     agents: (memory.agents || []).filter((a) => a.status === "connected"),
-    stats: memory.stats || {},
+    stats,
   };
 }
 

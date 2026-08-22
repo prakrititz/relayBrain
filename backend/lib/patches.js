@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const { execFileSync } = require("child_process");
 const { tick } = require("./lamport");
 const { loadMemory, saveMemory, id } = require("./store");
+const { recordCollision } = require("./collisionMetrics");
 const { transformPair, insertOrdered, drain } = require("./ot");
 
 function isBinary(buf) {
@@ -139,7 +140,16 @@ function applyIncoming(projectId, patch, lastApplied, workspacePath) {
   const conflicts = [];
   for (let i = 1; i < ready.length; i++) {
     const t = transformPair(ready[i - 1], ready[i]);
-    if (!t.ok) conflicts.push(t);
+    if (!t.ok) {
+      conflicts.push(t);
+      if (t.manual) {
+        recordCollision(projectId, "merge_flagged", {
+          file: ready[i].file,
+          reason: t.reason,
+          lamport: ready[i].lamport,
+        });
+      }
+    }
   }
   memory.patches = ready.reduce((acc, p) => insertOrdered(acc, p), memory.patches || []);
   const applied = [];

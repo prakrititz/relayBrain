@@ -1,3 +1,8 @@
+---
+description: Relay coordination — room context, locks, /relay ask
+alwaysApply: true
+---
+
 <!-- BEGIN:relay-os -->
 # Relay (auto-installed)
 

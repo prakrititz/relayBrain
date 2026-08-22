@@ -9,9 +9,10 @@ const {
   makeUnifiedDiff,
 } = require("./util");
 
-const CURSOR_EDIT_TOOLS = new Set(["Write", "StrReplace", "ApplyPatch", "EditNotebook", "search_replace", "Edit"]);
-const CLAUDE_EDIT_TOOLS = new Set(["Edit", "Write", "MultiEdit", "Replace"]);
-const CODEX_EDIT_TOOLS = new Set(["apply_patch", "write", "edit_file", "create_file", "patch_file"]);
+const { EDIT_TOOL_SETS } = require("../editMatchers");
+const CURSOR_EDIT_TOOLS = EDIT_TOOL_SETS.cursor;
+const CLAUDE_EDIT_TOOLS = EDIT_TOOL_SETS.claude;
+const CODEX_EDIT_TOOLS = EDIT_TOOL_SETS.codex;
 
 function userQuery(text) {
   const match = String(text || "").match(/<user_query>\s*([\s\S]*?)\s*<\/user_query>/i);
@@ -281,13 +282,7 @@ function parseCopilot(file) {
   return events;
 }
 
-const ANTIGRAVITY_EDIT_TOOLS = new Set([
-  "replace_file_content",
-  "multi_replace_file_content",
-  "write_to_file",
-  "edit_file",
-  "create_file",
-]);
+const ANTIGRAVITY_EDIT_TOOLS = EDIT_TOOL_SETS.antigravity;
 
 // Antigravity quotes every tool argument, so `args.TargetFile` arrives as the
 // literal string `"c:\\Users\\me\\app.ts"` — surrounding quotes included.

@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "relay": {
+      "type": "local",
+      "command": "C:\\Program Files\\nodejs\\node.exe",
+      "args": [
+        "C:\\Users\\unnat\\Documents\\GitHub\\relayBrainv3\\backend\\mcp\\server.js"
+      ],
+      "env": {
+        "RELAY_WORKSPACE_PATH": "C:\\Users\\unnat\\Documents\\GitHub\\relayBrainv3"
+      },
+      "tools": [
+        "*"
+      ]
+    }
+  }
+}

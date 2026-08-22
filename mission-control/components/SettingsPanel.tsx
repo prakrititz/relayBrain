@@ -20,6 +20,12 @@ export function SettingsPanel() {
         API key: <code>{p.apiKey}</code>
       </p>
       <p>Events: {dashboard.stats.events ?? 0}</p>
+      <p>
+        Collisions prevented: <strong>{dashboard.stats.collisions?.totalSaved ?? 0}</strong>
+        {dashboard.stats.collisions?.updatedAt
+          ? ` (last ${new Date(dashboard.stats.collisions.updatedAt).toLocaleString()})`
+          : ""}
+      </p>
       <p>Connected agents: {dashboard.agents.filter((a) => a.status === "connected").length}</p>
       <p>Last sync: {new Date(p.lastSyncAt).toLocaleString()}</p>
       <WorkspaceActions projectId={p.id} />
