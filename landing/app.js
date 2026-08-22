@@ -123,3 +123,17 @@ window.addEventListener("load", updateNetworkConnectors);
 const networkResizeObserver = new ResizeObserver(updateNetworkConnectors);
 const network = document.querySelector(".network");
 if (network) networkResizeObserver.observe(network);
+
+// Data Carousel
+const carousel = document.querySelector('.data-carousel');
+const prevBtn = document.querySelector('.prev-slide');
+const nextBtn = document.querySelector('.next-slide');
+
+if (carousel && prevBtn && nextBtn) {
+  nextBtn.addEventListener('click', () => {
+    carousel.scrollBy({ left: carousel.offsetWidth, behavior: 'smooth' });
+  });
+  prevBtn.addEventListener('click', () => {
+    carousel.scrollBy({ left: -carousel.offsetWidth, behavior: 'smooth' });
+  });
+}

@@ -145,9 +145,52 @@
       <p class="fragmentation-summary"><span>12 agents</span><span>1 working tree</span><strong>0 coordination</strong></p>
     </section>
 
+    <section class="data shell section">
+      <div class="section-heading">
+        <div class="section-index">02 / The reality</div>
+        <h2>This isn't a<br>hypothetical problem.</h2>
+      </div>
+      <div class="data-carousel-container">
+        <div class="data-carousel">
+          <div class="data-slide">
+            <div class="data-slide-content">
+              <h3>79.4%</h3>
+              <p>of agent PRs overlap another agent PR in time.<br>27.7% of all agent PRs hit a merge conflict (vs. 10–20% for humans).</p>
+              <div class="slide-source">Source: arXiv:2607.04697 (33,596 agent PRs) &middot; AgenticFlict, arXiv:2604.03551v2 (142,652 agent PRs)</div>
+            </div>
+          </div>
+          <div class="data-slide">
+            <div class="data-slide-content">
+              <h3>41.7%</h3>
+              <p>conflict rate when two different agents (e.g. Cursor vs. Claude) overlap in time on the same repository.</p>
+              <div class="slide-source">Source: arXiv:2607.04697, AgenticFlict</div>
+            </div>
+          </div>
+          <div class="data-slide">
+            <div class="data-slide-content">
+              <h3>84.4%</h3>
+              <p>of conflicted files between agents are source code. In 57.6% of conflicts, they edit the exact same lines.</p>
+              <div class="slide-source">Source: AgenticFlict, arXiv:2604.03551v2</div>
+            </div>
+          </div>
+          <div class="data-slide">
+            <div class="data-slide-content">
+              <h3>$99&ndash;$209</h3>
+              <p>Estimated token cost for 100 overlapping heavy agent runs when resolving conflicts and redoing work.</p>
+              <div class="slide-source">Sources: Anthropic, OpenAI, Antigravity pricing docs</div>
+            </div>
+          </div>
+        </div>
+        <div class="carousel-controls">
+          <button class="prev-slide" aria-label="Previous slide">&larr;</button>
+          <button class="next-slide" aria-label="Next slide">&rarr;</button>
+        </div>
+      </div>
+    </section>
+
     <section class="steps shell section" id="how-it-works">
       <div class="section-heading">
-        <div class="section-index">02 / The layer</div>
+        <div class="section-index">03 / The layer</div>
         <h2>Claim. Coordinate.<br>Release.</h2>
       </div>
       <div class="step-list">
@@ -181,7 +224,7 @@
 
     <section class="protocol shell section">
       <div class="section-heading">
-        <div class="section-index">03 / No backend</div>
+        <div class="section-index">04 / No backend</div>
         <h2>You are the server.<br>You are the client.</h2>
       </div>
       <p class="protocol-intro">None of this needs hosted infrastructure. One person on the team runs <code>relay serve</code> — that machine is the host. Everyone else connects over an ngrok tunnel, straight to that laptop. Nothing lives on infrastructure you do not own.</p>
@@ -212,7 +255,7 @@
 
     <section class="memory-files shell section">
       <div class="memory-copy">
-        <div class="section-index">04 / Mission Control</div>
+        <div class="section-index">05 / Mission Control</div>
         <h2>One board for<br>every agent.</h2>
         <p>Started by <code>relay serve</code>, running on your own machine. Live lock table, lock graph, code edits, unified agent chat, conflicts, and who is online — across every machine in the room.</p>
         <ul>
@@ -235,7 +278,7 @@
 
     <section class="pseudo-commands shell section" id="get-started">
       <div class="section-heading" style="margin-bottom: 50px;">
-        <div class="section-index">05 / How to get started</div>
+        <div class="section-index">06 / How to get started</div>
         <h2>Two commands<br>on the host.</h2>
       </div>
       <p class="protocol-intro" style="margin-left: 0; margin-top: 0; margin-bottom: 50px;">Clone the repo, link the CLI, and point /.relay at a project. Cloning through <code>relay</code> registers the workspace and installs the claim/release hooks for every agent you use — nobody has to remember a command afterwards.</p>
@@ -285,7 +328,7 @@
 
     <section class="features shell section">
       <div class="section-heading">
-        <div class="section-index">06 / Built for parallel agents</div>
+        <div class="section-index">07 / Built for parallel agents</div>
         <h2>Conflicts prevented,<br>not discovered.</h2>
       </div>
       <div class="feature-grid">
