@@ -2,11 +2,11 @@
 
 ![Relay](./logo.png)
 
-### One project brain. Any coding agent.
+### GitHub Desktop for AI agents.
 
-*Git tracks your code. **Relay tracks your project intelligence** — tasks, decisions, failures, and what every agent did last session.*
+*Git coordinates humans committing minutes apart. **Relay coordinates agents editing the same files right now** — file locks, dependency-aware locks, live patch sync, and one shared board.*
 
-**Switch tools without re-explaining the repo.**
+**Twelve agents on one repo, and none of them blind to the others.**
 
 <br/>
 
@@ -35,31 +35,57 @@
 
 ## The problem
 
-You brief **Cursor** on Monday. Wednesday you switch to **Claude Code** — and start from zero. Every agent keeps its own little memory file (`CLAUDE.md`, `.cursorrules`, `copilot-instructions.md`, …), none of them talk to each other, and *you* become the human clipboard carrying context between tools.
+Eighteen months ago you had **one** coding assistant. Today you probably have **three running at once** — Claude in one terminal, Cursor in another, Copilot in the editor. They all write to the same files, and not one of them knows the others exist.
+
+Now put **four people** on that repo. That's **twelve agents**, editing the same code, blind to each other. You find out at the merge. Or you don't find out at all.
+
+Git solved this for humans — but Git assumes people committing at human speed, minutes apart, one branch each. **Agents write at machine speed, in parallel, in the same directory.** There is no layer for that.
 
 ## The fix
 
-Relay keeps **one shared `.relay/` brain** that every agent reads and writes — and patches each agent's instruction file to point at it automatically.
-
 ```diff
-- 5 agents · 5 memory files · 0 shared context
-+ 5 agents · 1 project brain · always in sync
+- 12 agents · 12 blind writers · conflicts discovered at merge
++ 12 agents · 1 lock table · conflicts prevented at the edit
 ```
 
-> **One install** gives you the CLI, stop hooks, agent prompts, the relay-sync skill, `.relay/` scaffolding, the Mission Control UI, and an optional MCP server.
+Relay sits under every agent as a **coordination layer**. Pre-tool hooks claim a lock before an agent writes; post-tool hooks release it. If one agent is modifying a component, another **cannot silently overwrite** those changes.
+
+> **One host, no backend.** One person runs `relay serve` — that machine *is* the server. Everyone else connects over an ngrok tunnel, straight to that laptop. Nothing lives on infrastructure you do not own.
+
+---
+
+## The four pillars
+
+| | What it does |
+|---|---|
+| 🔒 **File locking** | Every agent write goes through a claim/release cycle against a shared lock table (TTL-based, auto-expiring). Destructive overwrites are blocked, not detected after the fact. |
+| 🕸️ **Dependency-graph locking** | Files do not exist independently — one change can affect dozens. Relay parses imports with tree-sitter and asks *"does this change affect files another agent is working on?"*, not just *"is this exact file locked?"* Agents stay parallel; the blast radius stays safe. |
+| 📡 **Patch sync across machines** | Your teammate has their own filesystem, environment, and agents. Relay propagates **patches**, not whole-project copies — `relay push` / `relay pull` keep every clone on the same working state. |
+| 🖥️ **Mission Control** | One board for every agent on every machine: live lock table, lock graph, code edits, unified agent chat history, conflicts, presence. |
 
 ---
 
 ## Quick start
 
+**Host** — the machine everyone else connects to:
+
 ```bash
-cd your-project
-relay init          # .relay/, hooks, prompts, API key
-relay serve         # Mission Control → :6374  ·  API → :3001
-relay watch .       # background sync (keep running)
+relay login              # GitHub identity (uses the gh CLI)
+relay clone <repo-url>   # clone + register workspace + install agent hooks
+relay serve              # API → 127.0.0.1:3001 · Mission Control → :3002
 ```
 
-Work in **any** agent. Stop hooks (or `/relay update`) refresh the IR markdown. Switch agents → `/relay context` or just read `.relay/relay_context.md`.
+Then open Mission Control → **Team → Share** to mint the ngrok invite link.
+
+**Teammate:**
+
+```bash
+relay serve              # their own local relay
+# join with the host's invite link on the Team tab
+relay pull               # take the host's current working state
+```
+
+Now start agents as usual. Hooks claim and release locks automatically — nobody has to remember a command.
 
 <details>
 <summary><strong>Install options</strong></summary>
@@ -68,11 +94,11 @@ Work in **any** agent. Stop hooks (or `/relay update`) refresh the IR markdown. 
 
 | Method | Command |
 |--------|---------|
-| npm | `relay init` |
-| local dev | `npm i`, then `npm link` in this repo, then `relay init` |
-| GitHub | `npx github:AspiringPianist/OrbitOS init` |
+| local dev | `npm i`, then `npm link` in this repo |
+| attach an existing repo | `relay add /path/to/repo` |
+| fresh clone | `relay clone <url> [dir]` |
 
-Requires **Node.js 18+**. No database. First `relay serve` installs Mission Control deps automatically.
+Requires **Node.js 18+** (20+ recommended). No database, no hosted backend, no login server.
 
 </details>
 
@@ -81,44 +107,24 @@ Requires **Node.js 18+**. No database. First `relay serve` installs Mission Cont
 ## How it works
 
 ```text
-  Cursor ──┐
-  Claude ──┤   stop hooks + watch     ┌─────────────┐
-  Copilot ─┼──► sync ──► memory.json ─►│  .relay/    │──► relay_context.md
-  Codex ───┤         compile_brief     │  IR .md     │         │
-  Antigravity ┘      (agent updates)   └─────────────┘         ▼
-                                                          next agent reads handoff
+  Cursor ──┐  pre-tool hook: claim
+  Claude ──┤  post-tool hook: release      ┌──────────────┐
+  Copilot ─┼──► lock table ◄── dep graph ──│ relay serve  │──► Mission Control
+  Codex ───┤        ▲                      │  (your host) │          ▲
+  Antigravity ┘     │                      └──────┬───────┘          │
+                    │       ngrok tunnel          │                  │
+              teammate's relay ◄──── patches ─────┴──────────────────┘
 ```
 
-| Layer | Who runs it | Output |
-|-------|-------------|--------|
-| **Sync** | `relay watch`, stop hook, `relay sync` | `memory.json` + timeline |
-| **Compile** | same | `compile_brief.md` |
-| **IR update** | **you / the session agent** | `project.md`, `decisions.md`, … |
-| **Handoff** | `relay context` | `relay_context.md` |
+| Layer | Who runs it | What it guards |
+|-------|-------------|----------------|
+| **Claim / release** | pre- and post-tool hooks | exclusive write access to a file |
+| **Dependency graph** | tree-sitter import scan | files *affected by* the edit, not just the edit |
+| **Room** | `relay serve` + ngrok tunnel | one shared lock table across machines |
+| **Patches** | `relay push` / `relay pull` | working-tree state without full copies |
+| **Board** | Mission Control (:3002) | who holds what, right now |
 
-> `relay watch` = sync + compile only · `relay refresh` = sync + compile + context
-
----
-
-## What `relay init` creates
-
-```text
-your-project/
-├── .relay/
-│   ├── AGENT_BOOTSTRAP.md       ← read every session
-│   ├── relay_context.md         ← handoff file
-│   ├── compile_brief.md         ← agent reads to update IR
-│   ├── project.md · current_task.md · decisions.md · failures.md
-│   ├── memory.json              ← unified timeline
-│   ├── project.json             ← API key + dashboard URL
-│   └── hooks/
-├── RELAY.md
-├── CLAUDE.md · AGENTS.md · .github/copilot-instructions.md · .cursorrules
-├── .cursor/hooks.json + .cursor/skills/relay-sync/
-├── .claude/settings.json · .codex/hooks.json · .agents/hooks.json
-```
-
-Registry (all projects): `~/.relay-os/projects.json`
+> Locks and the board are separate subsystems — hooks arbitrate straight against the host, while the board is fed by a mirror. `relay doctor` walks that chain and tells you which link is broken.
 
 ---
 
@@ -126,251 +132,78 @@ Registry (all projects): `~/.relay-os/projects.json`
 
 | Command | Description |
 |---------|-------------|
-| `relay init [path]` | Scaffold `.relay/`, hooks, agent patches, API key |
-| `relay install [path]` | Re-apply hooks after upgrade |
-| `relay serve` | Mission Control (:6374) + API (:3001) |
-| `relay watch [path]` | Background sync + compile |
-| `relay sync [path]` | Harvest transcripts → `memory.json` |
-| `relay compile [path]` | Write `compile_brief.md` |
-| `relay context [path]` | Generate `relay_context.md` |
-| `relay refresh [path]` | sync + compile + context |
-| `relay mcp` | MCP server (stdio) — optional |
-| `relay open` | Print UI + API URLs |
-
-**Pseudo-commands** — patched into agent instructions, *not* native slash commands:
-
-| Say | Agent does |
-|-----|------------|
-| `/relay update` | sync → compile → update IR → `relay context .` |
-| `/relay context` | read `.relay/relay_context.md` |
-| `/relay init` | run `relay init` if missing |
-
-> Terminal shortcut: `relay refresh .` ≈ `/relay update`
+| `relay login` / `logout` / `whoami` | GitHub identity (via `gh` CLI, or device flow with `GITHUB_CLIENT_ID`) |
+| `relay clone <url> [dir]` | git clone + register workspace + install agent hooks |
+| `relay add <path>` | Attach an existing local repo |
+| `relay serve` | API on `127.0.0.1:3001` + Mission Control on `:3002` |
+| `relay serve --no-ui` | API + coordinator only |
+| `relay push` | Send your dirty working-tree files to the shared room |
+| `relay pull` | Apply the host's current dirty files onto this clone |
+| `relay status` | Health check (room, role, host, ports) |
+| `relay mcp-url` | Print the MCP config for this room's shared-context endpoint |
+| `relay doctor` | Diagnose an empty Coordinator board |
 
 ---
 
 ## Mission Control
 
-Started by `relay serve` — runs locally, no login.
+Started by `relay serve` — runs on your own machine, no hosted account.
 
 | | URL |
 |---|-----|
-| Dashboard | http://localhost:6374 |
-| API | http://localhost:3001/api/health |
+| Dashboard | http://localhost:3002 |
+| API | http://127.0.0.1:3001/api/health |
 
-Activity timeline across all agents · live IR markdown · per-project API keys.
+**File locks panel** · **lock graph canvas** · **code edits** · **agent session chat** · **activity timeline** · **team and room presence** · **conflict notices**.
 
 ---
 
-## MCP (optional)
+## MCP — shared room context
 
-Give agents **direct tool access** to `.relay/` — list files, read/write IR markdown, sync, fetch handoff.
-
-> **Tools exposed:** `relay_list_files` · `relay_read_file` · `relay_write_file` · `relay_get_context` · `relay_sync`
-
-Hooks + pseudo-commands are enough for most workflows. MCP is for agents where you want structured file tools on top.
-
-<details>
-<summary><strong>1 · Get your paths</strong></summary>
-
-<br/>
-
-After `relay init`, note:
-
-- **Project path** — absolute path to your repo
-- **API key** — printed at init (also in `.relay/project.json`) — only needed for remote mode
-
-</details>
-
-<details>
-<summary><strong>2 · Base config</strong></summary>
-
-<br/>
-
-Always set `RELAY_WORKSPACE_PATH` to your project root (required — MCP may not inherit the right cwd):
-
-```json
-"env": {
-  "RELAY_WORKSPACE_PATH": "/absolute/path/to/your-project"
-}
-```
-
-**Local mode** (reads/writes `.relay/` on disk — default):
-
-```json
-{
-  "command": "npx",
-  "args": ["-y", "relay-os", "mcp"],
-  "env": {
-    "RELAY_WORKSPACE_PATH": "/absolute/path/to/your-project"
-  }
-}
-```
-
-If `relay` is on your PATH (`npm link` / global install):
-
-```json
-{
-  "command": "relay",
-  "args": ["mcp"],
-  "env": {
-    "RELAY_WORKSPACE_PATH": "/absolute/path/to/your-project"
-  }
-}
-```
-
-**Remote mode** (via `relay serve` API — useful when UI/API is already running):
-
-```json
-{
-  "command": "npx",
-  "args": ["-y", "relay-os", "mcp"],
-  "env": {
-    "RELAY_WORKSPACE_PATH": "/absolute/path/to/your-project",
-    "RELAY_API_URL": "http://localhost:3001",
-    "RELAY_API_KEY": "relay_your_key_from_init"
-  }
-}
-```
-
-</details>
-
-<details>
-<summary><strong>3 · Register per agent</strong></summary>
-
-<br/>
-
-**Cursor** — `.cursor/mcp.json` (project) or user MCP settings
-
-```json
-{
-  "mcpServers": {
-    "relay": {
-      "command": "npx",
-      "args": ["-y", "relay-os", "mcp"],
-      "env": {
-        "RELAY_WORKSPACE_PATH": "/absolute/path/to/your-project"
-      }
-    }
-  }
-}
-```
-
-Restart Cursor or reload MCP. Relay tools appear in Agent mode.
-
-**Claude Code** — `.mcp.json` (project) or `~/.claude.json`
-
-```json
-{
-  "mcpServers": {
-    "relay": {
-      "command": "npx",
-      "args": ["-y", "relay-os", "mcp"],
-      "env": {
-        "RELAY_WORKSPACE_PATH": "/absolute/path/to/your-project"
-      }
-    }
-  }
-}
-```
-
-Or via CLI: `claude mcp add relay -- npx -y relay-os mcp` (set env in config after).
-
-**GitHub Copilot** — VS Code `.vscode/mcp.json` or Copilot CLI MCP config
-
-VS Code / Copilot (`mcp.json`):
-
-```json
-{
-  "servers": {
-    "relay": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "relay-os", "mcp"],
-      "env": {
-        "RELAY_WORKSPACE_PATH": "${workspaceFolder}"
-      }
-    }
-  }
-}
-```
-
-Copilot CLI — add to your MCP config file per [Copilot MCP docs](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/coding-agent/extend-coding-agent-with-mcp):
-
-```json
-{
-  "mcpServers": {
-    "relay": {
-      "command": "npx",
-      "args": ["-y", "relay-os", "mcp"],
-      "env": {
-        "RELAY_WORKSPACE_PATH": "/absolute/path/to/your-project"
-      }
-    }
-  }
-}
-```
-
-**Codex CLI** — `~/.codex/config.toml` or project config
-
-```toml
-[mcp_servers.relay]
-command = "npx"
-args = ["-y", "relay-os", "mcp"]
-
-[mcp_servers.relay.env]
-RELAY_WORKSPACE_PATH = "/absolute/path/to/your-project"
-```
-
-**Antigravity** — MCP settings (same JSON shape as Cursor)
-
-```json
-{
-  "mcpServers": {
-    "relay": {
-      "command": "npx",
-      "args": ["-y", "relay-os", "mcp"],
-      "env": {
-        "RELAY_WORKSPACE_PATH": "/absolute/path/to/your-project"
-      }
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary><strong>4 · Test MCP</strong></summary>
-
-<br/>
+Any MCP client can read the room's context, **even on a machine with no relay installed**:
 
 ```bash
-# Should print: relay-mcp started (local mode, workspace: ...)
-RELAY_WORKSPACE_PATH=/path/to/project relay mcp
+relay mcp-url    # prints a ready-to-paste mcpServers block
 ```
+
+Coordination tools (`relay_claim_file`, `relay_release_file`, `relay_status`) run against each member's own local relay. The room endpoint is **read-only** for anyone off the host machine.
+
+<details>
+<summary><strong>Tools exposed</strong></summary>
+
+<br/>
+
+| Tool | Purpose |
+|------|---------|
+| `relay_claim_file` | Acquire an exclusive write lock before editing |
+| `relay_release_file` | Release the lock after editing |
+| `relay_status` | View the full lock table |
+| `relay_get_conflicts` | Overlapping edits in the last 5 minutes |
+| `relay_get_recent_changes` | Recent `code_edit` events |
+| `relay_get_chat_history` | Unified agent chat across every room member |
+| `relay_report_change` | Push a code-change event |
+| `relay_report_decision` / `relay_get_decisions` | Append / read decisions |
+| `relay_update_task` / `relay_get_active_tasks` | Append / read tasks |
+| `relay_get_project_context` | Full JSON project context |
+| `relay_sync` | Re-read agent transcripts into unified history |
 
 </details>
 
 ---
 
-## 🎬 Example: three agents, one portfolio
+## 🪝 Hooks
 
-> **Day 1 — Cursor** builds the hero. Stop hook runs. You type `/relay update`.
+`relay clone` / `relay add` install pre-tool (**claim**), post-tool (**release**), pre-read, and stop hooks into your project:
 
-```markdown
-## Now   ← .relay/current_task.md
-- Hero done (gradient + CTA)
-- Next: projects grid
-```
+| Agent | Config | Write tools intercepted |
+|-------|--------|-------------------------|
+| Claude Code | `.claude/settings.json` | `Edit`, `Write`, `NotebookEdit` |
+| Cursor | `.cursor/hooks.json` | `Write`, `Edit`, `Delete` |
+| Codex | `.codex/hooks.json` | `apply_patch`, `Edit`, `Write` |
+| Copilot CLI | `.github/hooks/relay-os.json` | `edit`, `create` |
+| Antigravity | `.agents/hooks.json` | `write_to_file`, `replace_file_content`, `multi_replace_file_content` |
 
-> **Day 2 — Claude Code** opens the same folder. `/relay context` → implements the grid without re-briefing.
-
-> **Day 3 — Copilot CLI** fixes form validation, appends to `.relay/failures.md`.
-
-With `relay serve` + `relay watch .` running, Mission Control shows **all three agents on one timeline**.
-
-**🔁 Switch checklist:** `/relay update` → open same folder in new tool → `/relay context`
+Languages parsed for the dependency graph: TypeScript/JavaScript, Python, Go, Rust, Java, C#, C/C++, PHP, Ruby.
 
 ---
 
@@ -378,44 +211,28 @@ With `relay serve` + `relay watch .` running, Mission Control shows **all three 
 
 | | |
 |---|---|
-| ✅ **Required** | Node.js 18+, npm |
-| ⚙️ **Auto-installed** | `express`, `cors` (API) · `next`, `react` (Mission Control) |
-| 🚫 **Not needed** | MongoDB, Redis, Docker, login/OAuth |
-| 🧩 **Optional** | [`sqlite3` CLI](https://sqlite.org/download.html) on PATH — richer Copilot sync via VS Code `state.vscdb` (not an npm package) |
-| 🔑 **Optional LLM keys** | `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` for smarter `relay compile-ir` (heuristics work without) |
+| ✅ **Required** | Node.js 18+ (20+ recommended), npm |
+| ⚙️ **Bundled** | `express`, `cors`, `ws`, `@vscode/tree-sitter-wasm` · `next`, `react` (Mission Control) |
+| 🚫 **Not needed** | MongoDB, Redis, Docker, a hosted backend, an account |
+| 🧩 **Optional** | `gh` CLI for `relay login` · ngrok for cross-machine rooms |
 
-**Storage:** `.relay/` in your project + `~/.relay-os/projects.json` — files only, no DB server.
-
-**Env vars:** `RELAY_PORT` (3001) · `RELAY_UI_PORT` (6374) · `RELAY_API_KEY` (optional API auth) · `RELAY_SKIP_UI_INSTALL=1`
+**Env vars:** `RELAY_PORT` (3001) · `RELAY_UI_PORT` (3002) · `RELAY_UI_ORIGIN`
 
 ---
 
-## 🪝 Stop hooks
+## Roadmap
 
-Installed in your **project folder** by `relay init`:
-
-| Agent | Config |
-|-------|--------|
-| Cursor | `.cursor/hooks.json` |
-| Claude Code | `.claude/settings.json` |
-| Codex | `.codex/hooks.json` |
-| Copilot CLI | `.github/hooks/relay-os.json` |
-| Antigravity | `.agents/hooks.json` |
-
-Disable: `.relay/config.json` → `"autoAgentUpdate": false`
-
----
-
-## 📚 Docs
-
-[docs/QUICKSTART.md](docs/QUICKSTART.md)
+- **Git worktree isolation** — every agent in its own workspace off the same repository, free to experiment and test independently, integrated back into main when the work is ready.
+- Richer conflict resolution on top of the existing OT / patch layer.
 
 ---
 
 <div align="center">
 
-**Git tracks code. Relay tracks what your agents know about the project.**
+**We used Relay to build Relay.** The problem we were solving was the problem we were having.
 
-<sub>MIT licensed · Built for teams that switch tools mid-flight.</sub>
+The next time you build a hackathon project, do not just add more agents. **Just relay.it**
+
+<sub>MIT licensed · Your machine is the server.</sub>
 
 </div>
