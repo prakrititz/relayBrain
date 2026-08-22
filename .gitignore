@@ -6,6 +6,7 @@ out/
 .DS_Store
 mission-control/.next/
 data/
+test.txt
 
 # Generated per-machine hook paths (rewritten by relay serve / relay add)
 .cursor/hooks.json
