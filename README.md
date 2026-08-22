@@ -52,6 +52,10 @@ Relay sits under every agent as a **coordination layer**. Pre-tool hooks claim a
 
 > **One host, no backend.** One person runs `relay serve` — that machine *is* the server. Everyone else connects over an ngrok tunnel, straight to that laptop. Nothing lives on infrastructure you do not own.
 
+<p align="center">
+  <img src="./screenRec.gif" alt="Relay Demo" />
+</p>
+
 ---
 
 ## The four pillars
