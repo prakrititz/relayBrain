@@ -8,7 +8,7 @@
 
 **Twelve agents on one repo, and none of them blind to the others.**
 
-[**📖 Read the Documentation**]((https://relay-brain.vercel.app/docs.html))
+[**📖 Read the Documentation**](https://relay-brain.vercel.app/docs.html) · [**Docs in this repo**](./docs/README.md)
 
 <br/>
 
@@ -228,6 +228,28 @@ Languages parsed for the dependency graph: TypeScript/JavaScript, Python, Go, Ru
 | 🧩 **Optional** | `gh` CLI for `relay login` · ngrok for cross-machine rooms |
 
 **Env vars:** `RELAY_PORT` (3001) · `RELAY_UI_PORT` (3002) · `RELAY_UI_ORIGIN`
+
+---
+
+## Documentation
+
+Full documentation lives in [`docs/`](./docs/README.md).
+
+| | |
+|---|---|
+| [Quickstart](./docs/QUICKSTART.md) | Coordinating in about five minutes |
+| [Installation](./docs/INSTALLATION.md) | Requirements, install methods, what gets written where |
+| [Concepts](./docs/CONCEPTS.md) | Workspace, project, agent ID, lock, room, patch |
+| [Rooms and teams](./docs/ROOMS.md) | Hosting, invites, member tokens, joining, leaving |
+| [Architecture](./docs/ARCHITECTURE.md) | Process model, the two planes, one edit end to end |
+| [Locking](./docs/LOCKING.md) | The lock table, TTLs, ownership, dependency-graph soft locks |
+| [Sync and patches](./docs/SYNC.md) | Patch format, Lamport ordering, transform, transcripts |
+| [CLI reference](./docs/CLI.md) | Every command, flag and exit code |
+| [HTTP API reference](./docs/HTTP-API.md) | Every endpoint, with auth rules |
+| [MCP reference](./docs/MCP.md) | The fifteen tools and the read-only room endpoint |
+| [Hooks reference](./docs/HOOKS.md) | The hook contract per agent |
+| [Configuration](./docs/CONFIGURATION.md) | Environment variables, ports, on-disk layout |
+| [Troubleshooting](./docs/TROUBLESHOOTING.md) | `relay doctor` and the known failure modes |
 
 ---
 
