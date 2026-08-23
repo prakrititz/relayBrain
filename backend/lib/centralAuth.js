@@ -8,7 +8,17 @@ function hashKey(raw) {
 }
 
 function adminKey() {
-  return process.env.RELAY_CENTRAL_ADMIN_KEY || "relay-dev-admin";
+  // No insecure fallback: Central admin access is disabled entirely unless the
+  // operator explicitly sets RELAY_CENTRAL_ADMIN_KEY. A hardcoded default here
+  // would be a publicly known admin credential for every install.
+  return process.env.RELAY_CENTRAL_ADMIN_KEY || null;
+}
+
+function sameSecret(a, b) {
+  const bufA = Buffer.from(String(a));
+  const bufB = Buffer.from(String(b));
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
 }
 
 function registryPath() {
@@ -41,7 +51,8 @@ function createProject(name) {
 function resolveAuth(header) {
   const token = String(header || "").replace(/^Bearer\s+/i, "").trim();
   if (!token) return { ok: false };
-  if (token === adminKey()) return { ok: true, admin: true };
+  const key = adminKey();
+  if (key && sameSecret(token, key)) return { ok: true, admin: true };
   const hashed = hashKey(token);
   const project = loadProjects().find((p) => p.apiKeyHash === hashed);
   if (!project) return { ok: false };
