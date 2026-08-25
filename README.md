@@ -8,7 +8,7 @@
 
 **Twelve agents on one repo, and none of them blind to the others.**
 
-[**📖 Read the Documentation**](https://relay-brain.vercel.app/docs.html) · [**Docs in this repo**](./docs/README.md)
+[**Watch the demo**](https://youtu.be/vUea5Qih-nM) · [**Read the Documentation**](https://relay-brain.vercel.app/docs.html) · [**Docs in this repo**](./docs/README.md)
 
 <br/>
 
@@ -33,8 +33,6 @@
 
 </div>
 
----
-
 ## The problem
 
 Eighteen months ago you had **one** coding assistant. Today you probably have **three running at once** — Claude in one terminal, Cursor in another, Copilot in the editor. They all write to the same files, and not one of them knows the others exist.
@@ -58,20 +56,18 @@ Relay sits under every agent as a **coordination layer**. Pre-tool hooks claim a
 
 ![Relay Demo](./screenRec.gif)
 
-</div>
+**[Watch the full demo on YouTube](https://youtu.be/vUea5Qih-nM)**
 
----
+</div>
 
 ## The four pillars
 
 | | What it does |
 |---|---|
-| 🔒 **File locking** | Every agent write goes through a claim/release cycle against a shared lock table (TTL-based, auto-expiring). Destructive overwrites are blocked, not detected after the fact. |
-| 🕸️ **Dependency-graph locking** | Files do not exist independently — one change can affect dozens. Relay parses imports with tree-sitter and asks *"does this change affect files another agent is working on?"*, not just *"is this exact file locked?"* Agents stay parallel; the blast radius stays safe. |
-| 📡 **Patch sync across machines** | Your teammate has their own filesystem, environment, and agents. Relay propagates **patches**, not whole-project copies — `relay push` / `relay pull` keep every clone on the same working state. |
-| 🖥️ **Mission Control** | One board for every agent on every machine: live lock table, lock graph, code edits, unified agent chat history, conflicts, presence. |
-
----
+| **File locking** | Every agent write goes through a claim/release cycle against a shared lock table (TTL-based, auto-expiring). Destructive overwrites are blocked, not detected after the fact. |
+| **Dependency-graph locking** | Files do not exist independently — one change can affect dozens. Relay parses imports with tree-sitter and asks *"does this change affect files another agent is working on?"*, not just *"is this exact file locked?"* Agents stay parallel; the blast radius stays safe. |
+| **Patch sync across machines** | Your teammate has their own filesystem, environment, and agents. Relay propagates **patches**, not whole-project copies — `relay push` / `relay pull` keep every clone on the same working state. |
+| **Mission Control** | One board for every agent on every machine: live lock table, lock graph, code edits, unified agent chat history, conflicts, presence. |
 
 ## Quick start
 
@@ -110,8 +106,6 @@ Requires **Node.js 18+** (20+ recommended). No database, no hosted backend, no l
 
 </details>
 
----
-
 ## How it works
 
 ```text
@@ -134,8 +128,6 @@ Requires **Node.js 18+** (20+ recommended). No database, no hosted backend, no l
 
 > Locks and the board are separate subsystems — hooks arbitrate straight against the host, while the board is fed by a mirror. `relay doctor` walks that chain and tells you which link is broken.
 
----
-
 ## Commands
 
 | Command | Description |
@@ -152,8 +144,6 @@ Requires **Node.js 18+** (20+ recommended). No database, no hosted backend, no l
 | `relay mcp-url` | Print the MCP config for this room's shared-context endpoint |
 | `relay doctor` | Diagnose an empty Coordinator board |
 
----
-
 ## Mission Control
 
 Started by `relay serve` — runs on your own machine, no hosted account.
@@ -164,8 +154,6 @@ Started by `relay serve` — runs on your own machine, no hosted account.
 | API | http://127.0.0.1:3001/api/health |
 
 **Collisions prevented counter** (persisted to `~/.relay/data/projects/<id>/collisions.json` and mirrored to `<repo>/.relay/collisions.json`).
-
----
 
 ## MCP — shared room context
 
@@ -200,9 +188,7 @@ Coordination tools (`relay_claim_file`, `relay_release_file`, `relay_status`) ru
 
 </details>
 
----
-
-## 🪝 Hooks
+## Hooks
 
 `relay clone` / `relay add` / `relay init` install pre-tool (**claim**), post-tool (**release**), pre-read, stop hooks, **Relay MCP** (`relay_room_brief` for `/relay ask`), and the relay-os instruction block into every agent surface:
 
@@ -216,20 +202,16 @@ Coordination tools (`relay_claim_file`, `relay_release_file`, `relay_status`) ru
 
 Languages parsed for the dependency graph: TypeScript/JavaScript, Python, Go, Rust, Java, C#, C/C++, PHP, Ruby.
 
----
-
 ## Dependencies
 
 | | |
 |---|---|
-| ✅ **Required** | Node.js 18+ (20+ recommended), npm |
-| ⚙️ **Bundled** | `express`, `cors`, `ws`, `@vscode/tree-sitter-wasm` · `next`, `react` (Mission Control) |
-| 🚫 **Not needed** | MongoDB, Redis, Docker, a hosted backend, an account |
-| 🧩 **Optional** | `gh` CLI for `relay login` · ngrok for cross-machine rooms |
+| **Required** | Node.js 18+ (20+ recommended), npm |
+| **Bundled** | `express`, `cors`, `ws`, `@vscode/tree-sitter-wasm` · `next`, `react` (Mission Control) |
+| **Not needed** | MongoDB, Redis, Docker, a hosted backend, an account |
+| **Optional** | `gh` CLI for `relay login` · ngrok for cross-machine rooms |
 
 **Env vars:** `RELAY_PORT` (3001) · `RELAY_UI_PORT` (3002) · `RELAY_UI_ORIGIN`
-
----
 
 ## Documentation
 
@@ -251,14 +233,10 @@ Full documentation lives in [`docs/`](./docs/README.md).
 | [Configuration](./docs/CONFIGURATION.md) | Environment variables, ports, on-disk layout |
 | [Troubleshooting](./docs/TROUBLESHOOTING.md) | `relay doctor` and the known failure modes |
 
----
-
 ## Roadmap
 
 - **Git worktree isolation** — every agent in its own workspace off the same repository, free to experiment and test independently, integrated back into main when the work is ready.
 - Richer conflict resolution on top of the existing OT / patch layer.
-
----
 
 <div align="center">
 
