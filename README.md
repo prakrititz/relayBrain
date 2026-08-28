@@ -12,7 +12,7 @@
 
 <br/>
 
-<a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%E2%89%A518-3c873a?style=for-the-badge&logo=node.js&logoColor=white" alt="Node 18+"></a>
+<a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%E2%89%A520-3c873a?style=for-the-badge&logo=node.js&logoColor=white" alt="Node 20+"></a>
 <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2563eb?style=for-the-badge" alt="MIT"></a>
 <img src="https://img.shields.io/badge/storage-files%20only-64748b?style=for-the-badge" alt="No database">
 <img src="https://img.shields.io/badge/login-not%20required-16a34a?style=for-the-badge" alt="No login">

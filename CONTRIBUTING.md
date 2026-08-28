@@ -18,7 +18,7 @@ npm install
 npm link            # puts `relay` on your PATH
 ```
 
-Node 18+ is required; 20+ is what `package.json` declares. There is no database and no
+Node 20+ is required, matching the `engines.node` field in `package.json`. There is no database and no
 hosted backend to configure.
 
 Run it against a scratch repository rather than this one:

@@ -2,7 +2,7 @@
 
 Five minutes from a clean checkout to agents that cannot silently overwrite each other.
 
-**Prerequisites:** Node.js 18 or newer (20+ recommended) and npm. Nothing else is required
+**Prerequisites:** Node.js 20 or newer and npm. Nothing else is required
 for solo use — no database, no hosted backend, no account.
 
 ---
