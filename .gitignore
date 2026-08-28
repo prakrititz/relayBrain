@@ -1,5 +1,6 @@
 node_modules/
 .next/
+.vercel/
 out/
 .relay/
 *.log
@@ -7,6 +8,11 @@ out/
 mission-control/.next/
 data/
 test.txt
+
+# Local secrets (GITHUB_CLIENT_SECRET, RELAY_CENTRAL_ADMIN_KEY, ...)
+.env
+.env.*
+!.env.example
 
 # Generated per-machine hook paths (rewritten by relay serve / relay add)
 .cursor/hooks.json
