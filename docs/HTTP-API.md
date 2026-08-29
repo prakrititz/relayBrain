@@ -162,8 +162,13 @@ and writes them to disk. Returns `{ ok, lamport, files, applied, patches }` and 
 
 ### `POST /api/coord/claim` · `requireRoomMember`
 
-The main claim route. On a guest it is forwarded over the control socket to the host; if
-the tunnel is down, the local table is used as a last resort (not as the shared mutex).
+The main claim route. On a guest it is forwarded over the control socket to the host.
+
+If the tunnel is down, a **write** claim is refused rather than granted from the local
+table. The local table is not the shared mutex and does not mirror it — host lock pushes
+land in the board's `roomLocks` view, never in the table this route would consult — so a
+lock another member is holding looks free here every time. A `read` claim is advisory and
+still recorded locally.
 
 ```jsonc
 {
@@ -179,7 +184,13 @@ the tunnel is down, the local table is used as a last resort (not as the shared 
 ```
 
 **200** `{ allowed: true, warning?, lock?, renewed?, batch? }` ·
-**409** `{ allowed: false, holder, reason }` · **400** `{ error: "agent_required" }`.
+**409** `{ allowed: false, holder, reason }` · **400** `{ error: "agent_required" }` ·
+**503** `{ allowed: false, degraded: true, source: "local_fallback", reason: "control_offline" }`.
+
+Guest responses carry a `source`: `host` when the room actually answered, `local_fallback`
+when it did not. A body with `degraded: true` is not a verdict — it means the room was
+never asked — and `coordinator/client.js` treats it as a reason to keep walking its
+fallback ladder rather than as an answer.
 
 Every field is re-validated server-side: `agentId` is capped at 200 characters, `file` at
 1024, `files` and `dependsOn` at 64 entries each, and `mode` is coerced to `read` or
@@ -193,10 +204,19 @@ A refused claim increments the `claimsBlocked` collision counter.
 `{ agentId, file, workspaceId }` → `{ ok, released }`, or
 `{ ok: false, reason: "not_holder", holder }`.
 
+On a guest whose tunnel is down the release is applied locally and **queued for replay**,
+answering `{ ok, released, source: "local_fallback", degraded: true, queued: true }`. The
+queue is drained in order on reconnect; without it the host would hold the lock until its
+TTL expired, up to five minutes. Releases coalesce per file, and the queue is bounded at
+200 entries.
+
 ### `POST /api/coord/heartbeat` · `requireRoomMember`
 
 `{ agentId, file?, workspaceId }` → `{ ok: true, renewed: <count> }`. Omit `file` to renew
 every lock this agent holds in the workspace.
+
+Heartbeats are deliberately **not** queued when the tunnel is down: a heartbeat asserts
+liveness *now*, so replaying a stale one would revive a lock the host has already expired.
 
 ### `POST /api/coord/release-all` · `requireRoomMember`
 

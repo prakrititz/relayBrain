@@ -49,7 +49,13 @@ export type RoomInvite = {
   acceptedAt: number | null;
 };
 
-export type NoticeType = "invite" | "joined" | "left" | "host_offline" | "host_online";
+export type NoticeType =
+  | "invite"
+  | "joined"
+  | "left"
+  | "host_offline"
+  | "host_online"
+  | "replay_rejected";
 
 export type Notice = {
   id: string;

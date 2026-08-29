@@ -14,7 +14,8 @@
     "dev:api": "node backend/server.js --port 3001",
     "dev:ui": "npm run dev -w mission-control",
     "start": "node backend/server.js --port 3001",
-    "coordinator": "node backend/coordinator/server.js"
+    "coordinator": "node backend/coordinator/server.js",
+    "test": "node --test \"backend/**/*.test.js\""
   },
   "dependencies": {
     "@vscode/tree-sitter-wasm": "^0.3.1",

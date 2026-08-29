@@ -475,6 +475,21 @@ async function main() {
       controlBackoffMs = 200;
       roomControl.send({ type: "join" });
       console.log(`[relay-room] control stream ${room.url}`);
+      // Join first, then settle up: the host has to know who we are before it
+      // will accept a release from us.
+      if (roomControl.queued) {
+        const pending = roomControl.queued;
+        roomControl
+          .flush()
+          .then(({ replayed, rejected }) => {
+            console.log(
+              `[relay-room] replayed ${replayed.length}/${pending} queued lock ${
+                pending === 1 ? "mutation" : "mutations"
+              }${rejected.length ? `, ${rejected.length} rejected` : ""}`
+            );
+          })
+          .catch((err) => console.warn(`[relay-room] replay failed: ${err.message || err}`));
+      }
     });
     controlSocket.on("error", (err) => {
       console.warn(`[relay-room] control failed: ${err.message || err}`);
@@ -1292,6 +1307,31 @@ async function main() {
       return { locks: body.locks || [], reads: body.reads || [] };
     },
   });
+  /**
+   * A replayed release the host would not take. The agent that queued it has
+   * long since moved on and is not watching the board, so this has to be a
+   * notice rather than a socket event nobody is listening for.
+   */
+  roomControl.onReplay = ({ rejected }) => {
+    if (!rejected?.length) return;
+    const room = loadRoom();
+    const files = [...new Set(rejected.map((r) => r.body?.file).filter(Boolean))];
+    emitNotice(
+      {
+        type: "replay_rejected",
+        key: `replay_rejected:${room?.roomId || "room"}`,
+        title: `${rejected.length} offline ${rejected.length === 1 ? "release" : "releases"} did not reach the host`,
+        body: files.length
+          ? `Still held room-wide until they expire: ${files.slice(0, 3).join(", ")}${
+              files.length > 3 ? ` and ${files.length - 3} more` : ""
+            }.`
+          : "They will expire on their own TTL.",
+        workspaceId: room?.projectId || currentProject()?.id || null,
+      },
+      { revive: true }
+    );
+  };
+
   roomControl.onLocks = (msg) => {
     const current = loadRoom();
     if (msg.workspaceId && current?.hostProjectId && msg.workspaceId !== current.hostProjectId) return;
@@ -2225,9 +2265,26 @@ async function main() {
       };
       try {
         const result = await roomControl.rpc("claim", payload);
-        return res.status(result?.allowed ? 200 : 409).json(result || { allowed: false });
+        const answer = { ...(result || { allowed: false }), source: "host" };
+        return res.status(answer.allowed ? 200 : 409).json(answer);
       } catch {
-        /* tunnel down — local table is last resort, not the shared mutex */
+        // Tunnel down. The local table is NOT the shared mutex, and it does not
+        // even mirror it: host lock pushes land in `roomLocks` for the board,
+        // never in `lockTable`. Granting a write lock from it would not be
+        // optimistic, it would be uninformed — the file another member is
+        // holding looks free here every time. Say so instead of inventing a
+        // grant the room never issued, and let the caller drop down to room
+        // HTTP, which is a different wire and may well still be up.
+        if ((body.mode || "write") !== "read") {
+          return res.status(503).json({
+            allowed: false,
+            degraded: true,
+            source: "local_fallback",
+            reason: "control_offline",
+            detail: "Host unreachable — this claim was never adjudicated by the room.",
+          });
+        }
+        /* a read is advisory and cannot corrupt anything: record it locally */
       }
     }
     const scoped = sanitizeLockBody(body, httpLockSession(req));
@@ -2262,9 +2319,14 @@ async function main() {
     const body = roomScopedBody(req, req.body || {});
     if (room?.role === "guest") {
       try {
-        return res.json(await roomControl.rpc("release", body));
+        return res.json({ ...(await roomControl.rpc("release", body)), source: "host" });
       } catch {
-        /* local fallback */
+        // Queue it: unlike a claim, a release is a statement of fact that stays
+        // true. Without the replay the host holds the lock until its TTL runs
+        // out, which is up to five minutes of a file nobody is actually editing.
+        const queued = roomControl.enqueue("release", body);
+        const local = runLockRpc("release", body, httpLockSession(req));
+        return res.json({ ...local, source: "local_fallback", degraded: true, queued });
       }
     }
     res.json(runLockRpc("release", body, httpLockSession(req)));
@@ -2274,9 +2336,12 @@ async function main() {
     const body = roomScopedBody(req, req.body || {});
     if (room?.role === "guest") {
       try {
-        return res.json(await roomControl.rpc("heartbeat", body, 400));
+        return res.json({ ...(await roomControl.rpc("heartbeat", body, 400)), source: "host" });
       } catch {
-        /* local fallback */
+        // Not queued on purpose: a heartbeat asserts liveness *now*, so a
+        // replayed one would revive a lock the host has already expired.
+        const local = runLockRpc("heartbeat", body, httpLockSession(req));
+        return res.json({ ...local, source: "local_fallback", degraded: true });
       }
     }
     res.json(runLockRpc("heartbeat", body, httpLockSession(req)));
@@ -2295,6 +2360,7 @@ async function main() {
   app.post("/api/coord/read", requireRoomMember, async (req, res) => {
     const room = loadRoom();
     const body = roomScopedBody(req, req.body || {});
+    let degradedRead = false;
     if (room?.role === "guest") {
       try {
         return res.json(
@@ -2302,6 +2368,7 @@ async function main() {
         );
       } catch {
         /* tunnel down — record locally so this machine's board still lights up */
+        degradedRead = true;
       }
     }
     const scoped = sanitizeLockBody(body, httpLockSession(req));
@@ -2319,7 +2386,7 @@ async function main() {
       sse.emit("activity", { workspaceId: project?.id, item });
       broadcastRoom({ type: "read", workspaceId: project?.id, item });
     }
-    res.json({ ok: true, files });
+    res.json({ ok: true, files, ...(degradedRead ? { source: "local_fallback", degraded: true } : {}) });
   });
 
   function readActivity(scoped, file, project) {
