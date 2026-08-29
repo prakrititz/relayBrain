@@ -481,11 +481,13 @@ async function main() {
         const pending = roomControl.queued;
         roomControl
           .flush()
-          .then(({ replayed, rejected }) => {
+          .then(({ replayed, rejected, requeued }) => {
             console.log(
               `[relay-room] replayed ${replayed.length}/${pending} queued lock ${
                 pending === 1 ? "mutation" : "mutations"
-              }${rejected.length ? `, ${rejected.length} rejected` : ""}`
+              }${rejected.length ? `, ${rejected.length} rejected` : ""}${
+                requeued.length ? `, ${requeued.length} held for the next reconnect` : ""
+              }`
             );
           })
           .catch((err) => console.warn(`[relay-room] replay failed: ${err.message || err}`));
@@ -1313,6 +1315,9 @@ async function main() {
    * notice rather than a socket event nobody is listening for.
    */
   roomControl.onReplay = ({ rejected }) => {
+    // Only a host verdict is worth a notice. A transport failure has been put
+    // back on the queue and will go out on the next reconnect, so reporting it
+    // would be crying wolf about work that is still in hand.
     if (!rejected?.length) return;
     const room = loadRoom();
     const files = [...new Set(rejected.map((r) => r.body?.file).filter(Boolean))];
@@ -2264,6 +2269,13 @@ async function main() {
         peerWorkspacePath: body.workspaceId,
       };
       try {
+        // Never claim across an in-flight replay. A release queued during the
+        // outage and this claim ride the same socket, and the host's `release`
+        // only checks `sameOwner` — so a claim that overtakes the replay is
+        // granted and then quietly released out from under the agent by its own
+        // stale release. Letting the queue drain first makes the order the one
+        // the agent actually meant.
+        await roomControl.settled();
         const result = await roomControl.rpc("claim", payload);
         const answer = { ...(result || { allowed: false }), source: "host" };
         return res.status(answer.allowed ? 200 : 409).json(answer);

@@ -92,6 +92,109 @@ test("a re-queued release replays after the ones already waiting", async () => {
   assert.deepEqual(sent.map((m) => m.body.file), ["b.ts", "a.ts"]);
 });
 
+test("a transport failure puts the entry back rather than losing it", async () => {
+  const c = new RoomControl();
+  const socket = attached(c);
+  c.enqueue("release", rel("a.ts"));
+  c.enqueue("release", rel("b.ts"));
+  // The tunnel dies again after the first replay goes out.
+  const realSend = socket.send.bind(socket);
+  let sends = 0;
+  socket.send = (raw) => {
+    if (++sends > 1) {
+      socket.readyState = 3;
+      throw new Error("socket closed");
+    }
+    realSend(raw);
+  };
+
+  const { replayed, rejected, requeued } = await c.flush();
+  assert.equal(replayed.length, 1);
+  assert.equal(rejected.length, 0, "a dead tunnel is not a host verdict");
+  assert.equal(requeued.length, 1);
+  assert.equal(c.queued, 1, "the unsent release must survive for the next reconnect");
+  assert.equal(c.queue[0].body.file, "b.ts");
+});
+
+test("a re-queued entry keeps its place ahead of newer mutations", async () => {
+  const c = new RoomControl();
+  const socket = attached(c);
+  c.enqueue("release", rel("old.ts"));
+  socket.readyState = 3; // offline before the replay starts
+  await c.flush();
+  assert.equal(c.queued, 1);
+
+  socket.readyState = 1;
+  const sent = [];
+  const fresh = fakeSocket({ sent });
+  fresh.onmessage = (msg) => c.handle(msg);
+  c.attach(fresh);
+  c.enqueue("release", rel("new.ts"));
+  await c.flush();
+  assert.deepEqual(sent.map((m) => m.body.file), ["old.ts", "new.ts"]);
+});
+
+test("a release arriving mid-flush does not overtake the entry being re-queued", async () => {
+  // The queue is drained up front, so a release that comes in over HTTP while a
+  // replay is in flight lands in an empty queue and gets a fresh seq. If the
+  // re-queued entry were re-stamped too it would sort *after* that newer
+  // release, and the two would replay out of order.
+  const c = new RoomControl();
+  const socket = attached(c);
+  c.enqueue("release", rel("first.ts"));
+  socket.send = () => {
+    c.enqueue("release", rel("concurrent.ts")); // arrives during the replay
+    socket.readyState = 3;
+    throw new Error("socket closed");
+  };
+  await c.flush();
+  assert.equal(c.queued, 2);
+
+  const sent = [];
+  const fresh = fakeSocket({ sent });
+  fresh.onmessage = (msg) => c.handle(msg);
+  c.attach(fresh);
+  await c.flush();
+  assert.deepEqual(sent.map((m) => m.body.file), ["first.ts", "concurrent.ts"]);
+});
+
+test("a host verdict is final and is not re-queued", async () => {
+  const c = new RoomControl();
+  attached(c, { fail: true });
+  c.enqueue("release", rel("a.ts"));
+  const { rejected, requeued } = await c.flush();
+  assert.equal(rejected.length, 1);
+  assert.equal(requeued.length, 0);
+  assert.equal(c.queued, 0, "a release the host keeps refusing must not retry forever");
+});
+
+test("concurrent flushes share one pass and settled() waits for it", async () => {
+  const c = new RoomControl();
+  const sent = [];
+  attached(c, { sent });
+  c.enqueue("release", rel("a.ts"));
+  c.enqueue("release", rel("b.ts"));
+
+  const first = c.flush();
+  const second = c.flush();
+  assert.equal(first, second, "a second flush must not race the first for the same entries");
+
+  let done = false;
+  const waiter = c.settled().then(() => {
+    done = true;
+  });
+  assert.equal(done, false, "settled() must not resolve before the replay finishes");
+  await Promise.all([first, waiter]);
+  assert.equal(done, true);
+  // Each entry went out exactly once despite two flush() calls.
+  assert.deepEqual(sent.map((m) => m.body.file), ["a.ts", "b.ts"]);
+});
+
+test("settled() resolves immediately when nothing is in flight", async () => {
+  const c = new RoomControl();
+  assert.equal(await c.settled(), null);
+});
+
 test("rejected replays are reported and still drain", async () => {
   const c = new RoomControl();
   attached(c, { fail: true });
@@ -112,10 +215,12 @@ test("rejected replays are reported and still drain", async () => {
 test("flushing while still offline rejects rather than throwing", async () => {
   const c = new RoomControl();
   c.enqueue("release", rel("a.ts"));
-  const { replayed, rejected } = await c.flush();
+  const { replayed, rejected, requeued } = await c.flush();
   assert.equal(replayed.length, 0);
-  assert.equal(rejected.length, 1);
-  assert.equal(rejected[0].error, "control_offline");
+  assert.equal(rejected.length, 0);
+  assert.equal(requeued.length, 1);
+  assert.equal(requeued[0].error, "control_offline");
+  assert.equal(c.queued, 1, "still offline is not a reason to throw the release away");
 });
 
 test("flush on an empty queue is a no-op and does not call onReplay", async () => {
@@ -124,9 +229,10 @@ test("flush on an empty queue is a no-op and does not call onReplay", async () =
   c.onReplay = () => {
     called = true;
   };
-  const { replayed, rejected } = await c.flush();
+  const { replayed, rejected, requeued } = await c.flush();
   assert.equal(replayed.length, 0);
   assert.equal(rejected.length, 0);
+  assert.equal(requeued.length, 0);
   assert.equal(called, false);
 });
 

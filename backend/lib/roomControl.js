@@ -21,6 +21,7 @@ class RoomControl {
     this.queue = [];
     this.queueSeq = 0;
     this.onReplay = null;
+    this.flushing = null;
   }
 
   attach(socket) {
@@ -40,7 +41,15 @@ class RoomControl {
     if ((msg.type === "rpc-ok" || msg.type === "rpc-err") && this.pending.has(msg.id)) {
       const done = this.pending.get(msg.id);
       this.pending.delete(msg.id);
-      done(msg.type === "rpc-err" ? new Error(msg.error || "rpc_failed") : null, msg.result);
+      let error = null;
+      if (msg.type === "rpc-err") {
+        error = new Error(msg.error || "rpc_failed");
+        // The host answered, and said no. Everything else that can reject an
+        // rpc — a dead socket, a timeout, a send that throws — is the tunnel
+        // failing rather than a verdict, and replay treats the two oppositely.
+        error.fromHost = true;
+      }
+      done(error, msg.result);
       return true;
     }
     return false;
@@ -100,28 +109,67 @@ class RoomControl {
 
   /**
    * Replay the parked mutations, oldest first, and hand back what the host made
-   * of them. The queue is drained before the first send so a replay that throws
-   * midway cannot be retried forever against a host that keeps rejecting it.
+   * of them.
+   *
+   * A host *verdict* (an `rpc-err`, tagged `fromHost`) is final and the entry is
+   * dropped, so a release the host keeps refusing is not retried forever. Any
+   * other rejection — dead socket, timeout, a send that throws — is the tunnel
+   * failing rather than an answer, so those entries go back on the queue for the
+   * next reconnect rather than being silently lost.
    */
-  async flush() {
-    if (!this.queue.length) return { replayed: [], rejected: [] };
+  flush() {
+    // Concurrent callers share one pass: a second flush would race the first for
+    // the same entries and could replay one twice. This is checked before the
+    // empty-queue guard because #flush drains the queue up front — by the time a
+    // second caller arrives the queue is already empty, and returning a fresh
+    // resolved promise there would report "done" while the replay is still in
+    // flight, which is exactly what settled() must not do.
+    if (this.flushing) return this.flushing;
+    if (!this.queue.length) return Promise.resolve({ replayed: [], rejected: [], requeued: [] });
+    this.flushing = this.#flush().finally(() => {
+      this.flushing = null;
+    });
+    return this.flushing;
+  }
+
+  /**
+   * Resolves once any in-flight replay has finished.
+   *
+   * Anything that claims a lock must wait on this. A queued release and a fresh
+   * claim for the same file both travel this socket, and `release` on the host
+   * only checks `sameOwner` — so if a re-claim lands first, the replayed release
+   * that follows deletes the lock the agent has just been granted and still
+   * believes it holds.
+   */
+  settled() {
+    return this.flushing || Promise.resolve(null);
+  }
+
+  async #flush() {
     const batch = this.queue.slice().sort((a, b) => a.seq - b.seq);
     this.queue = [];
     const replayed = [];
     const rejected = [];
+    const requeued = [];
     for (const item of batch) {
       if (!this.open) {
-        rejected.push({ ...item, error: "control_offline" });
+        this.#requeue(item);
+        requeued.push({ ...item, error: "control_offline" });
         continue;
       }
       try {
         const result = await this.rpc(item.op, item.body);
         replayed.push({ ...item, result });
       } catch (err) {
-        rejected.push({ ...item, error: err?.message || String(err) });
+        const error = err?.message || String(err);
+        if (err?.fromHost) rejected.push({ ...item, error });
+        else {
+          this.#requeue(item);
+          requeued.push({ ...item, error });
+        }
       }
     }
-    const outcome = { replayed, rejected };
+    const outcome = { replayed, rejected, requeued };
     if (this.onReplay) {
       try {
         this.onReplay(outcome);
@@ -130,6 +178,14 @@ class RoomControl {
       }
     }
     return outcome;
+  }
+
+  // Keeps the original seq, so a re-queued entry still replays ahead of
+  // mutations issued after it.
+  #requeue(item) {
+    if (this.queue.some((q) => q.key === item.key)) return;
+    this.queue.push(item);
+    while (this.queue.length > MAX_QUEUED) this.queue.shift();
   }
 
   send(obj) {
