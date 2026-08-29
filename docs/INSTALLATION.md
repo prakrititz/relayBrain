@@ -6,7 +6,7 @@
 
 | | |
 |---|---|
-| **Required** | Node.js 18+ (20+ recommended — `package.json` declares `engines.node >= 20`), npm |
+| **Required** | Node.js 20+ (`package.json` declares `engines.node >= 20`), npm |
 | **Bundled** | `express`, `cors`, `ws`, `@vscode/tree-sitter-wasm`; `next` and `react` for Mission Control |
 | **Not needed** | MongoDB, Redis, Docker, a hosted backend, an account |
 | **Optional** | [`gh` CLI](https://cli.github.com) for `relay login`; [ngrok](https://ngrok.com) for cross-machine rooms |
