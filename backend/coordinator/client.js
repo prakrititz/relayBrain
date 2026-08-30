@@ -224,10 +224,18 @@ async function claimFile(workspacePath, agentId, file, ttlMs = 15000, opts = {})
   };
   // Local API owns the control-plane socket. Guests must not wait on ngrok HTTP
   // while chat snapshots are in flight — claims hop loopback, then a tiny WS.
+  // A `degraded` answer means the daemon could not reach the host, so it is not
+  // an answer at all — it must not short-circuit the ladder the way a real
+  // verdict does. Before this, the daemon's local-table grant came back as a
+  // plain `allowed: true` and stopped the search here, shadowing the room HTTP
+  // rung below: a dead control socket with a perfectly healthy tunnel never
+  // fell through to the wire that was still up.
+  let degraded = null;
   try {
     const remaining = Math.max(80, 800 - (Date.now() - started));
     const { body } = await postJson(apiPort(workspacePath), "/api/coord/claim", roomPayload(room, workspacePath, payload), remaining);
-    if (body && typeof body.allowed === "boolean") return { ...body, source: body.source || "control" };
+    if (body?.degraded) degraded = { ...body, source: body.source || "local_fallback" };
+    else if (body && typeof body.allowed === "boolean") return { ...body, source: body.source || "control" };
   } catch {
     /* coordinator / remote fallback */
   }
@@ -238,6 +246,15 @@ async function claimFile(workspacePath, agentId, file, ttlMs = 15000, opts = {})
     } catch {
       markRoomDown(room);
     }
+  }
+  // Every rung below this point is local to *this* machine: the coordinator
+  // process, the lock directory on this disk, and finally fail-open. None of
+  // them can adjudicate a lock that belongs to the room, so once we know we are
+  // a guest whose host is unreachable, consulting them would only launder an
+  // unanswered question into a confident yes. Refuse with the reason instead.
+  if (degraded) {
+    console.warn("[relay] HOST_UNREACHABLE — claim refused rather than granted locally");
+    return degraded;
   }
   const port = readPort(workspacePath);
   if (port) {
@@ -266,7 +283,10 @@ async function releaseFile(workspacePath, agentId, file) {
   const payload = { agentId, file, workspaceId: workspacePath };
   try {
     const { body } = await postJson(apiPort(workspacePath), "/api/coord/release", roomPayload(room, workspacePath, payload), 600);
-    if (body) return body;
+    // A degraded release is already queued for replay by the daemon, but the
+    // tunnel may still be up even when the control socket is not — try it, and
+    // let the replay be a harmless no-op if this succeeds.
+    if (body && !body.degraded) return body;
   } catch {
     /* fallback */
   }
